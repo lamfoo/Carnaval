@@ -366,7 +366,9 @@ if (document.readyState === 'loading') {
     initResultsAutoRefresh();
 }
 
-// Service Worker Registration (for offline functionality)
+// Service Worker Registration (disabled for now)
+// Uncomment and create sw.js file if you want offline functionality
+/*
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js')
@@ -378,3 +380,4 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+*/

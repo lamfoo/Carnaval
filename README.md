@@ -82,7 +82,12 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-### 6. Execute o servidor
+### 6. Popule com dados de exemplo (opcional)
+```bash
+python populate_sample_data.py
+```
+
+### 7. Execute o servidor
 ```bash
 python manage.py runserver
 ```

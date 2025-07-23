@@ -170,8 +170,8 @@ Confira os resultados da votação popular do Carnaval da Beira!
                         </div>
                         <div class="col-4">
                             <strong class="text-carnival-gold">
-                                {% if categoria_data.total_votos > 0 %}
-                                {{ categoria_data.total_votos|div:categoria_data.total_grupos|floatformat:1 }}
+                                {% if categoria_data.total_votos > 0 and categoria_data.total_grupos > 0 %}
+                                {{ categoria_data.media_votos|floatformat:1 }}
                                 {% else %}0{% endif %}
                             </strong>
                             <br><small class="text-muted">Média por Grupo</small>

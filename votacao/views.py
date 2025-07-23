@@ -193,11 +193,16 @@ def resultados(request):
             else:
                 grupo.porcentagem = 0
         
+        # Calculate average votes per group
+        total_grupos = grupos_com_votos.count()
+        media_votos = (total_votos_categoria / total_grupos) if total_grupos > 0 else 0
+        
         resultados_por_categoria[categoria_code] = {
             'nome': categoria_name,
             'grupos': grupos_com_votos,
             'total_votos': total_votos_categoria,
-            'total_grupos': grupos_com_votos.count(),
+            'total_grupos': total_grupos,
+            'media_votos': media_votos,
         }
     
     # Overall statistics
