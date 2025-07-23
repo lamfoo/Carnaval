@@ -224,46 +224,116 @@ Sistema de votação popular seguro com uma votação por categoria por disposit
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Voting page loaded - initializing voting system');
+    
     // Initialize voting system for each category
     const categories = {{ categorias_info|length }};
+    console.log('Total categories:', categories);
     
     {% for categoria_info in categorias_info %}
     {% if not categoria_info.ja_votou %}
+    console.log('Initializing category:', '{{ categoria_info.codigo }}');
     initCategoryVoting('{{ categoria_info.codigo }}');
     {% endif %}
     {% endfor %}
+    
+    // Alternative direct approach for button clicks
+    setTimeout(function() {
+        document.querySelectorAll('.select-group-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Direct button click detected');
+                
+                const card = this.closest('.voting-card');
+                const categoria = card.dataset.categoria;
+                const grupoId = card.dataset.grupoId;
+                
+                console.log('Category:', categoria, 'Group ID:', grupoId);
+                
+                // Find the form for this category
+                const form = document.getElementById(`vote-form-${categoria}`);
+                const hiddenInput = form.querySelector('input[name="grupo_id"]');
+                const confirmBtn = document.getElementById(`confirm-vote-${categoria}`);
+                
+                // Clear previous selections in this category
+                form.querySelectorAll('.voting-card').forEach(function(c) {
+                    c.classList.remove('selected');
+                    const indicator = c.querySelector('.selection-indicator');
+                    if (indicator) indicator.style.display = 'none';
+                    const btnEl = c.querySelector('.select-group-btn');
+                    if (btnEl) {
+                        btnEl.innerHTML = '<i class="bi bi-hand-thumbs-up me-2"></i>Selecionar para Voto';
+                        btnEl.classList.remove('btn-success');
+                        btnEl.classList.add('btn-outline-primary');
+                    }
+                });
+                
+                // Select current card
+                card.classList.add('selected');
+                const indicator = card.querySelector('.selection-indicator');
+                if (indicator) indicator.style.display = 'block';
+                
+                // Update button
+                this.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Selecionado';
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-success');
+                
+                // Update form
+                hiddenInput.value = grupoId;
+                confirmBtn.disabled = false;
+                confirmBtn.className = 'btn btn-success btn-lg';
+                confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirmar Voto';
+                
+                console.log('Selection completed for group:', grupoId);
+            });
+        });
+    }, 500);
 });
 
 function initCategoryVoting(categoria) {
-    const votingCards = document.querySelectorAll(`[data-categoria="${categoria}"] .voting-card`);
-    const form = document.getElementById(`vote-form-${categoria}`);
+    const formSection = document.querySelector(`#vote-form-${categoria}`);
+    if (!formSection) {
+        console.warn(`Form not found for category: ${categoria}`);
+        return;
+    }
+    
+    const votingCards = formSection.querySelectorAll('.voting-card');
     const confirmBtn = document.getElementById(`confirm-vote-${categoria}`);
-    const hiddenInput = form.querySelector('input[name="grupo_id"]');
+    const hiddenInput = formSection.querySelector('input[name="grupo_id"]');
+    
+    if (!votingCards.length || !confirmBtn || !hiddenInput) {
+        console.warn(`Missing elements for category: ${categoria}`);
+        return;
+    }
     
     let selectedGroup = null;
     
     votingCards.forEach(card => {
-        card.addEventListener('click', function() {
+        // Function to select a card
+        function selectCard(cardElement) {
+            console.log('Selecting card for group:', cardElement.dataset.grupoId);
             // Remove previous selection
             votingCards.forEach(c => {
                 c.classList.remove('selected');
                 c.querySelector('.selection-indicator').style.display = 'none';
-                c.querySelector('.select-group-btn').innerHTML = '<i class="bi bi-hand-thumbs-up me-2"></i>Selecionar para Voto';
-                c.querySelector('.select-group-btn').classList.remove('btn-success');
-                c.querySelector('.select-group-btn').classList.add('btn-outline-primary');
+                const btn = c.querySelector('.select-group-btn');
+                btn.innerHTML = '<i class="bi bi-hand-thumbs-up me-2"></i>Selecionar para Voto';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
             });
             
             // Add selection to clicked card
-            this.classList.add('selected');
-            this.querySelector('.selection-indicator').style.display = 'block';
+            cardElement.classList.add('selected');
+            cardElement.querySelector('.selection-indicator').style.display = 'block';
             
-            const btn = this.querySelector('.select-group-btn');
+            const btn = cardElement.querySelector('.select-group-btn');
             btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Selecionado';
             btn.classList.remove('btn-outline-primary');
             btn.classList.add('btn-success');
             
             // Store selected group
-            selectedGroup = this.dataset.grupoId;
+            selectedGroup = cardElement.dataset.grupoId;
             hiddenInput.value = selectedGroup;
             
             // Enable confirm button
@@ -272,23 +342,43 @@ function initCategoryVoting(categoria) {
             confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirmar Voto';
             
             // Add visual feedback
-            this.style.transform = 'scale(1.02)';
+            cardElement.style.transform = 'scale(1.02)';
             setTimeout(() => {
-                this.style.transform = '';
+                cardElement.style.transform = '';
             }, 200);
+        }
+        
+        // Add click event to the card
+        card.addEventListener('click', function(e) {
+            // Don't trigger if clicking on a button or link
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+                return;
+            }
+            selectCard(this);
         });
+        
+        // Add click event specifically to the select button
+        const selectBtn = card.querySelector('.select-group-btn');
+        if (selectBtn) {
+            selectBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Button clicked for group:', card.dataset.grupoId);
+                selectCard(card);
+            });
+        }
         
         // Keyboard navigation
         card.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                this.click();
+                selectCard(this);
             }
         });
     });
     
     // Form submission with confirmation
-    form.addEventListener('submit', function(e) {
+    formSection.addEventListener('submit', function(e) {
         if (!selectedGroup) {
             e.preventDefault();
             showMessage('Por favor, selecione um grupo para votar.', 'warning');
