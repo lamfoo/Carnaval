@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}Sistema de gerenciamento do Carnaval da Beira - Grupos participantes, notícias e votação popular{% endblock %}">
+    <meta name="keywords" content="carnaval, beira, grupos, votação, escola de samba, bloco de rua">
+    <meta name="author" content="Carnaval da Beira">
+    
+    <title>{% block title %}Carnaval da Beira{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{% load static %}{% static 'css/custom.css' %}" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% load static %}{% static 'images/favicon.ico' %}">
+</head>
+<body>
+    <!-- Skip to main content for accessibility -->
+    <a class="visually-hidden-focusable" href="#main-content">Pular para o conteúdo principal</a>
+    
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top" role="navigation" aria-label="Navegação principal">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'core:home' %}">
+                <i class="bi bi-music-note-beamed me-2"></i>
+                Carnaval da Beira
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" 
+                           href="{% url 'core:home' %}" aria-current="{% if request.resolver_match.url_name == 'home' %}page{% endif %}">
+                            <i class="bi bi-house me-1"></i>Início
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'grupos' in request.resolver_match.app_name %}active{% endif %}" 
+                           href="{% url 'grupos:lista' %}">
+                            <i class="bi bi-people me-1"></i>Grupos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'noticias' in request.resolver_match.app_name %}active{% endif %}" 
+                           href="{% url 'noticias:lista' %}">
+                            <i class="bi bi-newspaper me-1"></i>Notícias
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'votacao' in request.resolver_match.app_name %}active{% endif %}" 
+                           href="{% url 'votacao:votar' %}">
+                            <i class="bi bi-hand-thumbs-up me-1"></i>Votação
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'votacao' in request.resolver_match.app_name and 'resultados' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'votacao:resultados' %}">
+                            <i class="bi bi-trophy me-1"></i>Resultados
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main id="main-content" role="main" style="margin-top: 76px;">
+        {% if messages %}
+            <div class="container mt-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                        <strong>
+                            {% if message.tags == 'error' %}
+                                <i class="bi bi-exclamation-triangle"></i> Erro!
+                            {% elif message.tags == 'warning' %}
+                                <i class="bi bi-exclamation-triangle"></i> Atenção!
+                            {% elif message.tags == 'success' %}
+                                <i class="bi bi-check-circle"></i> Sucesso!
+                            {% else %}
+                                <i class="bi bi-info-circle"></i> Informação:
+                            {% endif %}
+                        </strong>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5" role="contentinfo">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-music-note-beamed me-2"></i>Carnaval da Beira</h5>
+                    <p class="text-muted">Sistema de gerenciamento dos grupos carnavalescos e votação popular.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Links Úteis</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'grupos:lista' %}" class="text-light text-decoration-none">Grupos Participantes</a></li>
+                        <li><a href="{% url 'noticias:lista' %}" class="text-light text-decoration-none">Notícias</a></li>
+                        <li><a href="{% url 'votacao:votar' %}" class="text-light text-decoration-none">Votar</a></li>
+                        <li><a href="{% url 'votacao:resultados' %}" class="text-light text-decoration-none">Resultados</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; {% now "Y" %} Carnaval da Beira. Todos os direitos reservados.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small class="text-muted">Desenvolvido com Django e Bootstrap</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{% load static %}{% static 'js/custom.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

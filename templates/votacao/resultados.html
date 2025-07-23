@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resultados da Votação - Carnaval da Beira{% endblock %}
+
+{% block meta_description %}
+Confira os resultados da votação popular do Carnaval da Beira! 
+{{ total_votos_geral }} votos registrados em {{ total_grupos_ativos }} grupos participantes.
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="text-center py-5">
+        <h1 class="display-4 text-carnival-primary mb-3">
+            <i class="bi bi-trophy-fill me-3"></i>
+            Resultados da Votação
+        </h1>
+        <p class="lead text-muted">
+            Acompanhe os resultados da votação popular em tempo real
+        </p>
+    </div>
+
+    <!-- Overall Statistics -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card text-center bg-carnival-primary text-white">
+                <div class="card-body">
+                    <i class="bi bi-hand-thumbs-up-fill display-4 mb-3"></i>
+                    <h3 class="card-title">{{ total_votos_geral }}</h3>
+                    <p class="card-text">Votos Registrados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center bg-carnival-secondary text-white">
+                <div class="card-body">
+                    <i class="bi bi-people-fill display-4 mb-3"></i>
+                    <h3 class="card-title">{{ total_grupos_ativos }}</h3>
+                    <p class="card-text">Grupos Participantes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center bg-carnival-gold text-dark">
+                <div class="card-body">
+                    <i class="bi bi-award-fill display-4 mb-3"></i>
+                    <h3 class="card-title">2</h3>
+                    <p class="card-text">Categorias</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top 3 Overall -->
+    {% if top_grupos_geral %}
+    <section class="mb-5">
+        <h2 class="text-carnival-primary text-center mb-4">
+            <i class="bi bi-trophy me-2"></i>
+            Top 3 Mais Votados (Geral)
+        </h2>
+        <div class="row g-4">
+            {% for grupo in top_grupos_geral %}
+            <div class="col-md-4">
+                <div class="card text-center {% if forloop.counter == 1 %}border-warning{% elif forloop.counter == 2 %}border-secondary{% else %}border-success{% endif %}" style="border-width: 3px;">
+                    <div class="card-header {% if forloop.counter == 1 %}bg-warning text-dark{% elif forloop.counter == 2 %}bg-secondary text-white{% else %}bg-success text-white{% endif %}">
+                        <h5 class="mb-0">
+                            {% if forloop.counter == 1 %}
+                            <i class="bi bi-trophy-fill me-2"></i>1º Lugar
+                            {% elif forloop.counter == 2 %}
+                            <i class="bi bi-award-fill me-2"></i>2º Lugar
+                            {% else %}
+                            <i class="bi bi-award me-2"></i>3º Lugar
+                            {% endif %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">{{ grupo.nome_grupo }}</h6>
+                        <p class="text-muted">{{ grupo.get_categoria_display }}</p>
+                        <div class="display-6 text-carnival-primary">{{ grupo.total_votos }}</div>
+                        <small class="text-muted">voto{{ grupo.total_votos|pluralize }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Results by Category -->
+    <div class="results-container">
+        {% for categoria_code, categoria_data in resultados_por_categoria.items %}
+        <section class="results-section mb-5">
+            <div class="card">
+                <div class="card-header {% if categoria_code == 'escola_samba' %}bg-success{% else %}bg-info{% endif %} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">
+                            <i class="bi bi-{% if categoria_code == 'escola_samba' %}mortarboard{% else %}music-note-beamed{% endif %} me-2"></i>
+                            {{ categoria_data.nome }}
+                        </h3>
+                        <div class="text-end">
+                            <span class="badge bg-white {% if categoria_code == 'escola_samba' %}text-success{% else %}text-info{% endif %} me-2">
+                                {{ categoria_data.total_grupos }} grupos
+                            </span>
+                            <span class="badge bg-light text-dark">
+                                {{ categoria_data.total_votos }} votos
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    {% if categoria_data.grupos %}
+                    <div class="row g-4">
+                        {% for grupo in categoria_data.grupos %}
+                        <div class="col-lg-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="me-3 flex-shrink-0">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 50px; height: 50px;">
+                                        <strong class="text-carnival-primary">{{ forloop.counter }}º</strong>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <a href="{% url 'grupos:detalhe' grupo.id %}" class="text-decoration-none">
+                                            {{ grupo.nome_grupo }}
+                                        </a>
+                                    </h6>
+                                    <div class="progress mb-2" style="height: 25px;">
+                                        <div class="progress-bar {% if categoria_code == 'escola_samba' %}bg-success{% else %}bg-info{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ grupo.porcentagem }}%"
+                                             aria-valuenow="{{ grupo.porcentagem }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ grupo.porcentagem|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="vote-count">{{ grupo.total_votos }}</span>
+                                        <small class="text-muted">
+                                            {% if grupo.total_votos == 1 %}1 voto{% else %}{{ grupo.total_votos }} votos{% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-info-circle text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">Nenhum grupo nesta categoria</h5>
+                        <p class="text-muted">Ainda não há grupos cadastrados nesta categoria.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if categoria_data.total_votos > 0 %}
+                <div class="card-footer bg-light">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <strong class="text-carnival-primary">{{ categoria_data.total_votos }}</strong>
+                            <br><small class="text-muted">Total de Votos</small>
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-carnival-secondary">{{ categoria_data.total_grupos }}</strong>
+                            <br><small class="text-muted">Grupos Participantes</small>
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-carnival-gold">
+                                {% if categoria_data.total_votos > 0 %}
+                                {{ categoria_data.total_votos|div:categoria_data.total_grupos|floatformat:1 }}
+                                {% else %}0{% endif %}
+                            </strong>
+                            <br><small class="text-muted">Média por Grupo</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+
+    <!-- Actions Section -->
+    <div class="text-center py-5">
+        <div class="d-flex flex-wrap justify-content-center gap-3 mb-4">
+            <a href="{% url 'votacao:votar' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-hand-thumbs-up me-2"></i>
+                Participar da Votação
+            </a>
+            <a href="{% url 'grupos:lista' %}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-people me-2"></i>
+                Ver Todos os Grupos
+            </a>
+            <button onclick="shareResults()" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-share me-2"></i>
+                Compartilhar Resultados
+            </button>
+        </div>
+
+        <!-- Auto-refresh info -->
+        <small class="text-muted">
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            Resultados atualizados automaticamente a cada 30 segundos
+        </small>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="alert alert-info">
+        <div class="d-flex">
+            <i class="bi bi-info-circle me-3 flex-shrink-0"></i>
+            <div>
+                <strong>Sobre a Votação:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Cada dispositivo pode votar uma vez por categoria</li>
+                    <li>Os resultados são atualizados em tempo real</li>
+                    <li>A votação é segura e anônima</li>
+                    <li>Todos os votos são auditados para garantir a integridade</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh results every 30 seconds
+    setInterval(function() {
+        refreshResults();
+    }, 30000);
+
+    // Initialize progress bar animations
+    animateProgressBars();
+});
+
+function refreshResults() {
+    fetch('{% url "votacao:resultados_json" %}')
+        .then(response => response.json())
+        .then(data => {
+            updateResultsDisplay(data);
+        })
+        .catch(error => {
+            console.error('Error refreshing results:', error);
+        });
+}
+
+function updateResultsDisplay(data) {
+    // Update progress bars and vote counts
+    Object.keys(data).forEach(categoria => {
+        const categoryData = data[categoria];
+        
+        categoryData.grupos.forEach((grupo, index) => {
+            const progressBar = document.querySelector(`[data-grupo-id="${grupo.id}"] .progress-bar`);
+            const voteCount = document.querySelector(`[data-grupo-id="${grupo.id}"] .vote-count`);
+            
+            if (progressBar) {
+                progressBar.style.width = grupo.porcentagem + '%';
+                progressBar.textContent = grupo.porcentagem.toFixed(1) + '%';
+                progressBar.setAttribute('aria-valuenow', grupo.porcentagem);
+            }
+            
+            if (voteCount) {
+                voteCount.textContent = grupo.votos;
+            }
+        });
+    });
+    
+    // Show update indicator
+    showUpdateIndicator();
+}
+
+function animateProgressBars() {
+    const progressBars = document.querySelectorAll('.progress-bar');
+    
+    progressBars.forEach((bar, index) => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        
+        setTimeout(() => {
+            bar.style.transition = 'width 1s ease-in-out';
+            bar.style.width = width;
+        }, index * 100);
+    });
+}
+
+function showUpdateIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    indicator.style.cssText = 'top: 100px; right: 20px; z-index: 1050; min-width: 250px;';
+    indicator.innerHTML = `
+        <i class="bi bi-check-circle me-2"></i>
+        Resultados atualizados!
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(indicator);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (indicator.parentNode) {
+            const bsAlert = new bootstrap.Alert(indicator);
+            bsAlert.close();
+        }
+    }, 3000);
+}
+
+function shareResults() {
+    const url = window.location.href;
+    const title = 'Resultados do Carnaval da Beira';
+    const text = 'Confira os resultados da votação popular do Carnaval da Beira!';
+    
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            text: text,
+            url: url
+        }).catch(console.error);
+    } else {
+        // Fallback - copy to clipboard
+        navigator.clipboard.writeText(url).then(() => {
+            showMessage('Link copiado para a área de transferência!', 'success');
+        }).catch(() => {
+            // Final fallback - show share options
+            showShareModal(url, title, text);
+        });
+    }
+}
+
+function showShareModal(url, title, text) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Compartilhar Resultados</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Compartilhe os resultados da votação:</p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" value="${url}" readonly>
+                        <button class="btn btn-outline-secondary" onclick="copyToClipboard('${url}')">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}" 
+                           target="_blank" class="btn btn-primary">
+                            <i class="bi bi-facebook me-2"></i>Facebook
+                        </a>
+                        <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}" 
+                           target="_blank" class="btn btn-info">
+                            <i class="bi bi-twitter me-2"></i>Twitter
+                        </a>
+                        <a href="https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}" 
+                           target="_blank" class="btn btn-success">
+                            <i class="bi bi-whatsapp me-2"></i>WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+function showMessage(message, type = 'info') {
+    const alertHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+             style="top: 100px; right: 20px; z-index: 1050; min-width: 250px;">
+            <strong>
+                <i class="bi bi-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                ${type === 'success' ? 'Sucesso!' : 'Informação:'}
+            </strong>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', alertHTML);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = document.querySelector('.alert:last-child');
+        if (alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }
+    }, 5000);
+}
+
+// Add data attributes to progress containers for easier updates
+document.addEventListener('DOMContentLoaded', function() {
+    {% for categoria_code, categoria_data in resultados_por_categoria.items %}
+    {% for grupo in categoria_data.grupos %}
+    const grupo{{ grupo.id }}Container = document.querySelector('.col-lg-6:nth-child({{ forloop.counter }})');
+    if (grupo{{ grupo.id }}Container) {
+        grupo{{ grupo.id }}Container.setAttribute('data-grupo-id', '{{ grupo.id }}');
+    }
+    {% endfor %}
+    {% endfor %}
+});
+</script>
+{% endblock %}

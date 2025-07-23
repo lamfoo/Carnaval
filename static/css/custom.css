@@ -1,0 +1,310 @@
+/* Custom CSS for Carnaval da Beira */
+
+:root {
+    --carnival-primary: #dc3545;
+    --carnival-secondary: #fd7e14;
+    --carnival-success: #198754;
+    --carnival-info: #0dcaf0;
+    --carnival-warning: #ffc107;
+    --carnival-danger: #dc3545;
+    --carnival-gold: #ffd700;
+    --carnival-purple: #6f42c1;
+}
+
+/* Custom color scheme */
+.bg-carnival-primary { background-color: var(--carnival-primary) !important; }
+.bg-carnival-secondary { background-color: var(--carnival-secondary) !important; }
+.bg-carnival-gold { background-color: var(--carnival-gold) !important; }
+.bg-carnival-purple { background-color: var(--carnival-purple) !important; }
+
+.text-carnival-primary { color: var(--carnival-primary) !important; }
+.text-carnival-secondary { color: var(--carnival-secondary) !important; }
+.text-carnival-gold { color: var(--carnival-gold) !important; }
+.text-carnival-purple { color: var(--carnival-purple) !important; }
+
+/* Body styling */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+
+/* Navigation enhancements */
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    transform: translateY(-2px);
+}
+
+.navbar-nav .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.375rem;
+}
+
+/* Card enhancements */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+
+/* Voting cards */
+.voting-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.voting-card:hover {
+    border-color: var(--carnival-primary);
+    transform: scale(1.02);
+}
+
+.voting-card.selected {
+    border-color: var(--carnival-success);
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+/* Progress bars */
+.progress {
+    height: 25px;
+    background-color: #f8f9fa;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, var(--carnival-primary), var(--carnival-secondary));
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 25px;
+}
+
+/* Buttons */
+.btn {
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--carnival-primary), var(--carnival-secondary));
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(25, 135, 84, 0.4);
+}
+
+/* Badges */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5em 0.75em;
+    border-radius: 0.5rem;
+}
+
+/* Hero section */
+.hero-section {
+    background: linear-gradient(135deg, var(--carnival-primary), var(--carnival-purple));
+    color: white;
+    padding: 4rem 0;
+    margin-bottom: 2rem;
+}
+
+.hero-section h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hero-section p {
+    font-size: 1.25rem;
+    opacity: 0.9;
+}
+
+/* News cards */
+.news-card {
+    border-left: 4px solid var(--carnival-primary);
+}
+
+.news-card.featured {
+    border-left-color: var(--carnival-gold);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 255, 255, 0.9));
+}
+
+/* Category filters */
+.category-filter {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.category-filter .btn-outline-primary {
+    border-color: var(--carnival-primary);
+    color: var(--carnival-primary);
+}
+
+.category-filter .btn-outline-primary:hover,
+.category-filter .btn-outline-primary.active {
+    background-color: var(--carnival-primary);
+    border-color: var(--carnival-primary);
+}
+
+/* Results section */
+.results-section .card {
+    border-top: 4px solid var(--carnival-gold);
+}
+
+.vote-count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--carnival-primary);
+}
+
+.vote-percentage {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--carnival-secondary);
+}
+
+/* Loading animation */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--carnival-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Accessibility improvements */
+.visually-hidden-focusable:not(:focus):not(:focus-within) {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Focus indicators */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    outline: 2px solid var(--carnival-primary);
+    outline-offset: 2px;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-section p {
+        font-size: 1.1rem;
+    }
+    
+    .card-img-top {
+        height: 150px;
+    }
+    
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-section {
+        padding: 2rem 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .progress {
+        height: 20px;
+    }
+    
+    .progress-bar {
+        font-size: 12px;
+        line-height: 20px;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    footer {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .card {
+        border: 2px solid #000;
+    }
+    
+    .btn-primary {
+        background: #000;
+        border-color: #000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Carnaval da Beira - Início{% endblock %}
+
+{% block meta_description %}
+Bem-vindo ao Carnaval da Beira! Confira os grupos participantes, últimas notícias e vote nos seus favoritos. 
+{% if total_grupos %}{{ total_grupos }} grupos inscritos{% endif %} 
+{% if total_votos %}e {{ total_votos }} votos registrados{% endif %}.
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="mb-4">
+                    <i class="bi bi-music-note-beamed me-3"></i>
+                    Carnaval da Beira
+                </h1>
+                <p class="lead mb-4">
+                    Celebre a tradição carnavalesca da Beira! Conheça os grupos participantes, 
+                    acompanhe as últimas notícias e vote nos seus favoritos.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'grupos:lista' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-people me-2"></i>Ver Grupos
+                    </a>
+                    <a href="{% url 'votacao:votar' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-hand-thumbs-up me-2"></i>Votar Agora
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="bg-white bg-opacity-10 rounded-3 p-4">
+                    <h3 class="text-carnival-gold">
+                        <i class="bi bi-trophy-fill me-2"></i>
+                        Estatísticas
+                    </h3>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="fw-bold">{{ total_grupos }}</h4>
+                            <small>Grupos</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="fw-bold">{{ total_votos }}</h4>
+                            <small>Votos</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="fw-bold">2</h4>
+                            <small>Categorias</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Statistics Cards -->
+    <section class="my-5">
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card text-center border-0 bg-carnival-primary text-white">
+                    <div class="card-body">
+                        <i class="bi bi-people-fill display-4 mb-3"></i>
+                        <h5 class="card-title">{{ total_grupos }}</h5>
+                        <p class="card-text">Grupos Participantes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center border-0 bg-carnival-secondary text-white">
+                    <div class="card-body">
+                        <i class="bi bi-mortarboard-fill display-4 mb-3"></i>
+                        <h5 class="card-title">{{ grupos_escola_samba }}</h5>
+                        <p class="card-text">Escolas de Samba</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center border-0 bg-carnival-purple text-white">
+                    <div class="card-body">
+                        <i class="bi bi-music-note-beamed display-4 mb-3"></i>
+                        <h5 class="card-title">{{ grupos_bloco_rua }}</h5>
+                        <p class="card-text">Blocos de Rua</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center border-0 bg-carnival-gold text-dark">
+                    <div class="card-body">
+                        <i class="bi bi-hand-thumbs-up-fill display-4 mb-3"></i>
+                        <h5 class="card-title">{{ total_votos }}</h5>
+                        <p class="card-text">Votos Registrados</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured News -->
+    {% if noticias_destaque %}
+    <section class="my-5">
+        <h2 class="text-carnival-primary mb-4">
+            <i class="bi bi-star-fill me-2"></i>
+            Notícias em Destaque
+        </h2>
+        <div class="row g-4">
+            {% for noticia in noticias_destaque %}
+            <div class="col-lg-4">
+                <article class="card h-100 news-card featured">
+                    {% if noticia.imagem %}
+                    <img src="{{ noticia.imagem.url }}" class="card-img-top" alt="{{ noticia.titulo }}">
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-carnival-gold text-dark">
+                                <i class="bi bi-star-fill me-1"></i>Destaque
+                            </span>
+                            {% if noticia.is_recent %}
+                            <span class="badge bg-carnival-primary">
+                                <i class="bi bi-clock me-1"></i>Novo
+                            </span>
+                            {% endif %}
+                        </div>
+                        <h5 class="card-title">{{ noticia.titulo }}</h5>
+                        <p class="card-text flex-grow-1">{{ noticia.resumo }}</p>
+                        <div class="mt-auto">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar me-1"></i>
+                                {{ noticia.data_publicacao|date:"d/m/Y" }}
+                                {% if noticia.autor %}
+                                | <i class="bi bi-person me-1"></i>{{ noticia.autor }}
+                                {% endif %}
+                            </small>
+                            <div class="mt-2">
+                                <a href="{% url 'noticias:detalhe' noticia.id %}" class="btn btn-outline-primary btn-sm">
+                                    Ler mais <i class="bi bi-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Featured Groups -->
+    {% if grupos_destaque %}
+    <section class="my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-carnival-primary mb-0">
+                <i class="bi bi-people me-2"></i>
+                Grupos em Destaque
+            </h2>
+            <a href="{% url 'grupos:lista' %}" class="btn btn-outline-primary">
+                Ver Todos <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="row g-4">
+            {% for grupo in grupos_destaque %}
+            <div class="col-lg-4 col-md-6">
+                <article class="card h-100 filterable-card" data-category="{{ grupo.categoria }}">
+                    {% if grupo.foto %}
+                    <img src="{{ grupo.foto.url }}" class="card-img-top" alt="{{ grupo.nome_grupo }}">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge {% if grupo.categoria == 'escola_samba' %}bg-success{% else %}bg-info{% endif %}">
+                                {{ grupo.get_categoria_display }}
+                            </span>
+                            {% if grupo.total_votos %}
+                            <span class="badge bg-carnival-primary">
+                                <i class="bi bi-heart-fill me-1"></i>{{ grupo.total_votos }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <h5 class="card-title">{{ grupo.nome_grupo }}</h5>
+                        <p class="card-text flex-grow-1">{{ grupo.descricao|truncatewords:20 }}</p>
+                        <div class="mt-auto">
+                            <small class="text-muted">
+                                <i class="bi bi-person me-1"></i>{{ grupo.representante }}
+                            </small>
+                            <div class="mt-2 d-flex gap-2">
+                                <a href="{% url 'grupos:detalhe' grupo.id %}" class="btn btn-outline-primary btn-sm flex-grow-1">
+                                    <i class="bi bi-info-circle me-1"></i>Detalhes
+                                </a>
+                                <a href="{% url 'votacao:votar' %}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-hand-thumbs-up me-1"></i>Votar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Recent News -->
+    {% if noticias_recentes %}
+    <section class="my-5">
+        <div class="row">
+            <div class="col-lg-8">
+                <h2 class="text-carnival-primary mb-4">
+                    <i class="bi bi-newspaper me-2"></i>
+                    Últimas Notícias
+                </h2>
+                <div class="list-group list-group-flush">
+                    {% for noticia in noticias_recentes %}
+                    <article class="list-group-item border-0 px-0 py-3">
+                        <div class="row align-items-center">
+                            {% if noticia.imagem %}
+                            <div class="col-md-3">
+                                <img src="{{ noticia.imagem.url }}" class="img-fluid rounded" alt="{{ noticia.titulo }}" style="height: 80px; width: 100%; object-fit: cover;">
+                            </div>
+                            <div class="col-md-9">
+                            {% else %}
+                            <div class="col-12">
+                            {% endif %}
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="mb-1">
+                                        <a href="{% url 'noticias:detalhe' noticia.id %}" class="text-decoration-none">
+                                            {{ noticia.titulo }}
+                                        </a>
+                                    </h6>
+                                    {% if noticia.destaque %}
+                                    <span class="badge bg-carnival-gold text-dark ms-2">
+                                        <i class="bi bi-star-fill"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-1 text-muted">{{ noticia.resumo|truncatewords:15 }}</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar me-1"></i>{{ noticia.data_publicacao|date:"d/m/Y H:i" }}
+                                    {% if noticia.autor %}
+                                    | <i class="bi bi-person me-1"></i>{{ noticia.autor }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-4">
+                    <a href="{% url 'noticias:lista' %}" class="btn btn-outline-primary">
+                        Ver Todas as Notícias <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Top Voted Groups -->
+                {% if top_grupos %}
+                <div class="card border-0 bg-light mb-4">
+                    <div class="card-header bg-carnival-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-trophy me-2"></i>
+                            Grupos Mais Votados
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% for grupo in top_grupos %}
+                        <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                            <div>
+                                <strong>{{ forloop.counter }}º</strong>
+                                <a href="{% url 'grupos:detalhe' grupo.id %}" class="text-decoration-none ms-2">
+                                    {{ grupo.nome_grupo|truncatechars:25 }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ grupo.get_categoria_display }}</small>
+                            </div>
+                            <span class="badge bg-carnival-primary">
+                                {{ grupo.total_votos }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer bg-light text-center">
+                        <a href="{% url 'votacao:resultados' %}" class="btn btn-sm btn-outline-primary">
+                            Ver Resultados Completos
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="card border-0 bg-light">
+                    <div class="card-header bg-carnival-secondary text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-lightning me-2"></i>
+                            Ações Rápidas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'votacao:votar' %}" class="btn btn-primary">
+                                <i class="bi bi-hand-thumbs-up me-2"></i>
+                                Votar nos Grupos
+                            </a>
+                            <a href="{% url 'grupos:lista' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-people me-2"></i>
+                                Explorar Grupos
+                            </a>
+                            <a href="{% url 'votacao:resultados' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-bar-chart me-2"></i>
+                                Ver Resultados
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

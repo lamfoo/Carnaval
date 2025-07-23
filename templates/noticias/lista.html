@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notícias - Carnaval da Beira{% endblock %}
+
+{% block meta_description %}
+Acompanhe todas as notícias e novidades do Carnaval da Beira. 
+{% if total_noticias %}{{ total_noticias }} notícia{{ total_noticias|pluralize }} publicada{{ total_noticias|pluralize }}{% endif %}.
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="text-center py-5">
+        <h1 class="display-4 text-carnival-primary mb-3">
+            <i class="bi bi-newspaper me-3"></i>
+            Notícias
+        </h1>
+        <p class="lead text-muted">
+            Fique por dentro de todas as novidades do Carnaval da Beira
+        </p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-6">
+            <form method="get" class="d-flex">
+                <input type="search" class="form-control me-2" name="search" 
+                       placeholder="Buscar notícias..." value="{{ search_query }}"
+                       aria-label="Buscar notícias">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="bi bi-search"></i>
+                </button>
+                {% if search_query %}
+                <a href="." class="btn btn-outline-secondary ms-1">
+                    <i class="bi bi-x"></i>
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Search Results Info -->
+    {% if search_query %}
+    <div class="alert alert-info text-center">
+        <i class="bi bi-search me-2"></i>
+        Resultados para "<strong>{{ search_query }}</strong>": 
+        {{ page_obj.paginator.count }} notícia{{ page_obj.paginator.count|pluralize }} encontrada{{ page_obj.paginator.count|pluralize }}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            {% if noticias %}
+            <!-- News List -->
+            <div class="row g-4">
+                {% for noticia in noticias %}
+                <div class="col-12">
+                    <article class="card news-card {% if noticia.destaque %}featured{% endif %}">
+                        <div class="row g-0">
+                            {% if noticia.imagem %}
+                            <div class="col-md-4">
+                                <img src="{{ noticia.imagem.url }}" class="img-fluid h-100 w-100" 
+                                     alt="{{ noticia.titulo }}" style="object-fit: cover;">
+                            </div>
+                            <div class="col-md-8">
+                            {% else %}
+                            <div class="col-12">
+                            {% endif %}
+                                <div class="card-body h-100 d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex gap-2">
+                                            {% if noticia.destaque %}
+                                            <span class="badge bg-carnival-gold text-dark">
+                                                <i class="bi bi-star-fill me-1"></i>Destaque
+                                            </span>
+                                            {% endif %}
+                                            {% if noticia.is_recent %}
+                                            <span class="badge bg-carnival-primary">
+                                                <i class="bi bi-clock me-1"></i>Recente
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ noticia.data_publicacao|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    
+                                    <h5 class="card-title">
+                                        <a href="{% url 'noticias:detalhe' noticia.id %}" class="text-decoration-none">
+                                            {{ noticia.titulo }}
+                                        </a>
+                                    </h5>
+                                    
+                                    <p class="card-text flex-grow-1">{{ noticia.resumo|truncatewords:30 }}</p>
+                                    
+                                    <div class="mt-auto">
+                                        {% if noticia.autor %}
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="bi bi-person me-1"></i>{{ noticia.autor }}
+                                        </small>
+                                        {% endif %}
+                                        
+                                        <a href="{% url 'noticias:detalhe' noticia.id %}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            Ler mais <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Navegação da lista de notícias" class="mt-5">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <!-- No News Found -->
+            <div class="text-center py-5">
+                <i class="bi bi-newspaper text-muted" style="font-size: 4rem;"></i>
+                <h3 class="text-muted mt-3">
+                    {% if search_query %}
+                    Nenhuma notícia encontrada
+                    {% else %}
+                    Nenhuma notícia publicada
+                    {% endif %}
+                </h3>
+                <p class="text-muted">
+                    {% if search_query %}
+                    Tente usar outros termos de busca.
+                    {% else %}
+                    Ainda não há notícias publicadas no sistema.
+                    {% endif %}
+                </p>
+                {% if search_query %}
+                <a href="." class="btn btn-primary">
+                    <i class="bi bi-arrow-left me-2"></i>Ver todas as notícias
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Featured News -->
+            {% if noticias_destaque and not search_query %}
+            <div class="card border-0 bg-light mb-4">
+                <div class="card-header bg-carnival-gold text-dark">
+                    <h6 class="mb-0">
+                        <i class="bi bi-star-fill me-2"></i>
+                        Notícias em Destaque
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for noticia in noticias_destaque %}
+                    <div class="d-flex mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                        {% if noticia.imagem %}
+                        <div class="flex-shrink-0 me-3">
+                            <img src="{{ noticia.imagem.url }}" 
+                                 class="rounded" 
+                                 style="width: 60px; height: 60px; object-fit: cover;"
+                                 alt="{{ noticia.titulo }}">
+                        </div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="{% url 'noticias:detalhe' noticia.id %}" 
+                                   class="text-decoration-none">
+                                    {{ noticia.titulo|truncatechars:50 }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar me-1"></i>
+                                {{ noticia.data_publicacao|date:"d/m/Y" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent News -->
+            <div class="card border-0 bg-light mb-4">
+                <div class="card-header bg-carnival-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clock me-2"></i>
+                        Notícias Recentes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for noticia in noticias_recentes %}
+                    <div class="d-flex align-items-start mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                        <div class="me-2 flex-shrink-0">
+                            <div class="bg-carnival-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 30px; height: 30px; font-size: 12px;">
+                                {{ forloop.counter }}
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 fs-6">
+                                <a href="{% url 'noticias:detalhe' noticia.id %}" 
+                                   class="text-decoration-none">
+                                    {{ noticia.titulo|truncatechars:45 }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                {{ noticia.data_publicacao|date:"d/m/Y" }}
+                                {% if noticia.autor %}
+                                | {{ noticia.autor }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card border-0 bg-light">
+                <div class="card-header bg-carnival-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning me-2"></i>
+                        Ações Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'core:home' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-house me-2"></i>
+                            Página Inicial
+                        </a>
+                        <a href="{% url 'grupos:lista' %}" class="btn btn-outline-success">
+                            <i class="bi bi-people me-2"></i>
+                            Ver Grupos
+                        </a>
+                        <a href="{% url 'votacao:votar' %}" class="btn btn-primary">
+                            <i class="bi bi-hand-thumbs-up me-2"></i>
+                            Votar
+                        </a>
+                        <a href="{% url 'votacao:resultados' %}" class="btn btn-outline-warning">
+                            <i class="bi bi-bar-chart me-2"></i>
+                            Resultados
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

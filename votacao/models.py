@@ -1,0 +1,125 @@
+from django.db import models
+from django.utils import timezone
+from grupos.models import Grupo
+import hashlib
+
+
+def generate_device_id(ip_address, user_agent):
+    """Generate a secure device ID based on IP and user agent"""
+    combined = f"{ip_address}:{user_agent}"
+    return hashlib.sha256(combined.encode()).hexdigest()
+
+
+class Voto(models.Model):
+    grupo = models.ForeignKey(
+        Grupo,
+        on_delete=models.CASCADE,
+        verbose_name="Grupo",
+        related_name="votos"
+    )
+    categoria = models.CharField(
+        max_length=20,
+        choices=Grupo.CATEGORIA_CHOICES,
+        verbose_name="Categoria"
+    )
+    device_id = models.CharField(
+        max_length=64,
+        verbose_name="ID do Dispositivo",
+        help_text="Hash SHA-256 do IP + User-Agent"
+    )
+    ip_address = models.GenericIPAddressField(
+        verbose_name="Endereço IP",
+        help_text="IP do votante (para auditoria)"
+    )
+    timestamp = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Data/Hora do Voto"
+    )
+    
+    class Meta:
+        verbose_name = "Voto"
+        verbose_name_plural = "Votos"
+        ordering = ['-timestamp']
+        # Unique constraint: one vote per device per category
+        unique_together = [['device_id', 'categoria']]
+        indexes = [
+            models.Index(fields=['categoria', 'grupo']),
+            models.Index(fields=['device_id']),
+            models.Index(fields=['timestamp']),
+        ]
+        
+    def __str__(self):
+        return f"Voto para {self.grupo.nome_grupo} - {self.get_categoria_display()}"
+        
+    def save(self, *args, **kwargs):
+        # Ensure categoria matches grupo's categoria
+        if self.grupo:
+            self.categoria = self.grupo.categoria
+        super().save(*args, **kwargs)
+
+
+class ResultadoVotacao(models.Model):
+    """Model to store voting results summary"""
+    categoria = models.CharField(
+        max_length=20,
+        choices=Grupo.CATEGORIA_CHOICES,
+        unique=True,
+        verbose_name="Categoria"
+    )
+    total_votos = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Total de Votos"
+    )
+    ultimo_update = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+    
+    class Meta:
+        verbose_name = "Resultado da Votação"
+        verbose_name_plural = "Resultados da Votação"
+        
+    def __str__(self):
+        return f"Resultado - {self.get_categoria_display()}"
+        
+    @classmethod
+    def update_results(cls, categoria):
+        """Update voting results for a specific category"""
+        total = Voto.objects.filter(categoria=categoria).count()
+        result, created = cls.objects.get_or_create(
+            categoria=categoria,
+            defaults={'total_votos': total}
+        )
+        if not created:
+            result.total_votos = total
+            result.save()
+        return result
+
+
+class VotingSession(models.Model):
+    """Model to track voting sessions and prevent abuse"""
+    session_key = models.CharField(
+        max_length=40,
+        unique=True,
+        verbose_name="Chave da Sessão"
+    )
+    device_id = models.CharField(
+        max_length=64,
+        verbose_name="ID do Dispositivo"
+    )
+    created_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Criado em"
+    )
+    votes_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Quantidade de Votos"
+    )
+    
+    class Meta:
+        verbose_name = "Sessão de Votação"
+        verbose_name_plural = "Sessões de Votação"
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"Sessão {self.session_key[:8]}... - {self.votes_count} votos"
