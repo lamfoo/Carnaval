@@ -210,6 +210,14 @@ Sistema de votação popular seguro com uma votação por categoria por disposit
     {% endif %}
     {% endfor %}
 
+    <!-- Test Button (temporary for debugging) -->
+    <div class="text-center py-3">
+        <button type="button" class="btn btn-warning" onclick="testPaymentModal()">
+            <i class="bi bi-gear me-2"></i>
+            🧪 TESTE: Abrir Modal de Pagamento
+        </button>
+    </div>
+
     <!-- Results Link -->
     <div class="text-center py-5">
         <h3 class="text-carnival-primary mb-3">Quer ver como está a votação?</h3>
@@ -234,172 +242,84 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if not categoria_info.ja_votou %}
     console.log('Initializing category:', '{{ categoria_info.codigo }}');
     initCategoryVoting('{{ categoria_info.codigo }}');
-    {% endif %}
+        {% endif %}
     {% endfor %}
     
-    // Alternative direct approach for button clicks
+    // Payment Modal Integration - Execute after DOM is ready
     setTimeout(function() {
-        document.querySelectorAll('.select-group-btn').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Direct button click detected');
-                
-                const card = this.closest('.voting-card');
-                const categoria = card.dataset.categoria;
-                const grupoId = card.dataset.grupoId;
-                
-                console.log('Category:', categoria, 'Group ID:', grupoId);
-                
-                // Find the form for this category
-                const form = document.getElementById(`vote-form-${categoria}`);
-                const hiddenInput = form.querySelector('input[name="grupo_id"]');
-                const confirmBtn = document.getElementById(`confirm-vote-${categoria}`);
-                
-                // Clear previous selections in this category
-                form.querySelectorAll('.voting-card').forEach(function(c) {
-                    c.classList.remove('selected');
-                    const indicator = c.querySelector('.selection-indicator');
-                    if (indicator) indicator.style.display = 'none';
-                    const btnEl = c.querySelector('.select-group-btn');
-                    if (btnEl) {
-                        btnEl.innerHTML = '<i class="bi bi-hand-thumbs-up me-2"></i>Selecionar para Voto';
-                        btnEl.classList.remove('btn-success');
-                        btnEl.classList.add('btn-outline-primary');
-                    }
-                });
-                
-                // Select current card
-                card.classList.add('selected');
-                const indicator = card.querySelector('.selection-indicator');
-                if (indicator) indicator.style.display = 'block';
-                
-                // Update button
-                this.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Selecionado';
-                this.classList.remove('btn-outline-primary');
-                this.classList.add('btn-success');
-                
-                // Update form
-                hiddenInput.value = grupoId;
-                confirmBtn.disabled = false;
-                confirmBtn.className = 'btn btn-success btn-lg';
-                confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirmar Voto';
-                
-                console.log('Selection completed for group:', grupoId);
-            });
-        });
-    }, 500);
+        console.log('Setting up payment modal handlers');
+        setupPaymentHandlers();
+    }, 1000);
 });
 
-function initCategoryVoting(categoria) {
-    const formSection = document.querySelector(`#vote-form-${categoria}`);
-    if (!formSection) {
-        console.warn(`Form not found for category: ${categoria}`);
-        return;
-    }
+function setupPaymentHandlers() {
+    console.log('Total buttons found:', document.querySelectorAll('.select-group-btn').length);
     
-    const votingCards = formSection.querySelectorAll('.voting-card');
-    const confirmBtn = document.getElementById(`confirm-vote-${categoria}`);
-    const hiddenInput = formSection.querySelector('input[name="grupo_id"]');
-    
-    if (!votingCards.length || !confirmBtn || !hiddenInput) {
-        console.warn(`Missing elements for category: ${categoria}`);
-        return;
-    }
-    
-    let selectedGroup = null;
-    
-    votingCards.forEach(card => {
-        // Function to select a card
-        function selectCard(cardElement) {
-            console.log('Selecting card for group:', cardElement.dataset.grupoId);
-            // Remove previous selection
-            votingCards.forEach(c => {
-                c.classList.remove('selected');
-                c.querySelector('.selection-indicator').style.display = 'none';
-                const btn = c.querySelector('.select-group-btn');
-                btn.innerHTML = '<i class="bi bi-hand-thumbs-up me-2"></i>Selecionar para Voto';
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-primary');
-            });
-            
-            // Add selection to clicked card
-            cardElement.classList.add('selected');
-            cardElement.querySelector('.selection-indicator').style.display = 'block';
-            
-            const btn = cardElement.querySelector('.select-group-btn');
-            btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Selecionado';
-            btn.classList.remove('btn-outline-primary');
-            btn.classList.add('btn-success');
-            
-            // Store selected group
-            selectedGroup = cardElement.dataset.grupoId;
-            hiddenInput.value = selectedGroup;
-            
-            // Enable confirm button
-            confirmBtn.disabled = false;
-            confirmBtn.className = 'btn btn-success btn-lg';
-            confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirmar Voto';
-            
-            // Add visual feedback
-            cardElement.style.transform = 'scale(1.02)';
-            setTimeout(() => {
-                cardElement.style.transform = '';
-            }, 200);
-        }
+    // Remove existing handlers and set up new ones
+    document.querySelectorAll('.select-group-btn').forEach(function(btn, index) {
+        console.log('Setting up handler for button', index + 1);
         
-        // Add click event to the card
-        card.addEventListener('click', function(e) {
-            // Don't trigger if clicking on a button or link
-            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('button') || e.target.closest('a')) {
+        // Create a new event handler
+        btn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('=== PAYMENT BUTTON CLICKED ===');
+            
+            const card = this.closest('.voting-card');
+            if (!card) {
+                console.error('Card not found for button');
                 return;
             }
-            selectCard(this);
-        });
-        
-        // Add click event specifically to the select button
-        const selectBtn = card.querySelector('.select-group-btn');
-        if (selectBtn) {
-            selectBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Button clicked for group:', card.dataset.grupoId);
-                selectCard(card);
-            });
-        }
-        
-        // Keyboard navigation
-        card.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                selectCard(this);
+            
+            const categoria = card.dataset.categoria;
+            const grupoId = card.dataset.grupoId;
+            const grupoNome = card.querySelector('.card-title');
+            
+            if (!grupoNome) {
+                console.error('Group name not found');
+                return;
             }
-        });
+            
+            const nomeText = grupoNome.textContent.trim();
+            
+            console.log('Opening payment modal for:', nomeText, 'ID:', grupoId, 'Category:', categoria);
+            
+            // Store selection data
+            window.currentGrupoId = grupoId;
+            window.currentCategoria = categoria;
+            
+            // Check if modal exists
+            const modalElement = document.getElementById('paymentModal');
+            const selectedNameElement = document.getElementById('selected-group-name');
+            
+            if (!modalElement) {
+                console.error('Payment modal not found!');
+                return;
+            }
+            
+            if (!selectedNameElement) {
+                console.error('Selected group name element not found!');
+                return;
+            }
+            
+            // Update modal with group name
+            selectedNameElement.textContent = nomeText;
+            
+            // Show payment modal
+            console.log('Showing payment modal...');
+            const paymentModal = new bootstrap.Modal(modalElement);
+            paymentModal.show();
+            
+            console.log('Modal show() called');
+        };
     });
     
-    // Form submission with confirmation
-    formSection.addEventListener('submit', function(e) {
-        if (!selectedGroup) {
-            e.preventDefault();
-            showMessage('Por favor, selecione um grupo para votar.', 'warning');
-            return;
-        }
-        
-        // Show loading state
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<span class="loading-spinner me-2"></span>Processando voto...';
-        
-        // Optional: Add confirmation dialog
-        const selectedCard = document.querySelector(`[data-grupo-id="${selectedGroup}"]`);
-        const groupName = selectedCard.querySelector('.card-title').textContent;
-        
-        if (!confirm(`Confirmar voto para "${groupName}"?\n\nEsta ação não pode ser desfeita.`)) {
-            e.preventDefault();
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirmar Voto';
-            return;
-        }
-    });
+    console.log('Payment handlers setup complete');
+}
+
+function initCategoryVoting(categoria) {
+    console.log('Category voting initialized for:', categoria);
+    // This function is now simplified - main voting logic is in setupPaymentHandlers
 }
 
 // Utility function for messages (defined in custom.js)
@@ -428,59 +348,34 @@ function showMessage(message, type = 'info') {
     }, 5000);
 }
 
-// Payment Modal Variables
-let currentPaymentId = null;
-let currentGrupoId = null;
-let currentCategoria = null;
-let paymentCheckInterval = null;
+// Payment Modal Variables - Initialize as global variables
+window.currentPaymentId = null;
+window.currentGrupoId = null;
+window.currentCategoria = null;
+window.paymentCheckInterval = null;
 
-// Update the existing JavaScript to integrate payment
-// Alternative direct approach for button clicks - Modified for payment
+// Payment form submission - will be set up after modal is available
 setTimeout(function() {
-    document.querySelectorAll('.select-group-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
+    const paymentForm = document.getElementById('payment-form');
+    if (paymentForm) {
+        paymentForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            e.stopPropagation();
-            console.log('Payment button click detected');
             
-            const card = this.closest('.voting-card');
-            const categoria = card.dataset.categoria;
-            const grupoId = card.dataset.grupoId;
-            const grupoNome = card.querySelector('.card-title').textContent.trim();
+            const phoneNumber = document.getElementById('phone-number').value.trim();
             
-            console.log('Category:', categoria, 'Group ID:', grupoId, 'Group Name:', grupoNome);
+            if (!phoneNumber) {
+                alert('Por favor, digite seu número de telefone');
+                return;
+            }
             
-            // Store selection data
-            currentGrupoId = grupoId;
-            currentCategoria = categoria;
+            // Show processing step
+            showPaymentStep(2);
             
-            // Update modal with group name
-            document.getElementById('selected-group-name').textContent = grupoNome;
-            
-            // Show payment modal
-            const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-            paymentModal.show();
+            // Initiate payment
+            initiatePayment(phoneNumber, window.currentGrupoId, window.currentCategoria);
         });
-    });
-}, 500);
-
-// Payment form submission
-document.getElementById('payment-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const phoneNumber = document.getElementById('phone-number').value.trim();
-    
-    if (!phoneNumber) {
-        alert('Por favor, digite seu número de telefone');
-        return;
     }
-    
-    // Show processing step
-    showPaymentStep(2);
-    
-    // Initiate payment
-    initiatePayment(phoneNumber, currentGrupoId, currentCategoria);
-});
+}, 1500);
 
 function showPaymentStep(step) {
     // Hide all steps
@@ -496,8 +391,9 @@ function resetPaymentModal() {
     showPaymentStep(1);
     document.getElementById('phone-number').value = '';
     document.getElementById('payment-error-message').textContent = '';
-    if (paymentCheckInterval) {
-        clearInterval(paymentCheckInterval);
+    if (window.paymentCheckInterval) {
+        clearInterval(window.paymentCheckInterval);
+        window.paymentCheckInterval = null;
     }
 }
 
@@ -519,16 +415,16 @@ function initiatePayment(phoneNumber, grupoId, categoria) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            currentPaymentId = data.payment_id;
+            window.currentPaymentId = data.payment_id;
             document.getElementById('transaction-reference').textContent = data.transaction_reference;
             
             // Start checking payment status
-            paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
+            window.paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
             
             // Auto-timeout after 5 minutes
             setTimeout(function() {
-                if (paymentCheckInterval) {
-                    clearInterval(paymentCheckInterval);
+                if (window.paymentCheckInterval) {
+                    clearInterval(window.paymentCheckInterval);
                     showPaymentError('Tempo limite esgotado. Tente novamente.');
                 }
             }, 300000); // 5 minutes
@@ -543,15 +439,16 @@ function initiatePayment(phoneNumber, grupoId, categoria) {
 }
 
 function checkPaymentStatus() {
-    if (!currentPaymentId) return;
+    if (!window.currentPaymentId) return;
     
-    fetch(`{% url "votacao:verificar_pagamento" %}?payment_id=${currentPaymentId}`)
+    fetch(`{% url "votacao:verificar_pagamento" %}?payment_id=${window.currentPaymentId}`)
     .then(response => response.json())
     .then(data => {
         console.log('Payment status:', data);
         
         if (data.is_successful) {
-            clearInterval(paymentCheckInterval);
+            clearInterval(window.paymentCheckInterval);
+            window.paymentCheckInterval = null;
             
             if (data.vote_processed) {
                 document.getElementById('voted-group-name').textContent = data.grupo_nome;
@@ -563,7 +460,8 @@ function checkPaymentStatus() {
                 }, 3000);
             }
         } else if (data.status === 'failed' || data.status === 'timeout') {
-            clearInterval(paymentCheckInterval);
+            clearInterval(window.paymentCheckInterval);
+            window.paymentCheckInterval = null;
             showPaymentError(data.response_desc || 'Pagamento falhou');
         }
     })
@@ -575,6 +473,47 @@ function checkPaymentStatus() {
 function showPaymentError(message) {
     document.getElementById('payment-error-message').textContent = message;
     showPaymentStep(4);
+}
+
+// Test function for debugging
+function testPaymentModal() {
+    console.log('=== TESTING PAYMENT MODAL ===');
+    
+    // Set test data
+    window.currentGrupoId = '1';
+    window.currentCategoria = 'escola_samba';
+    
+    // Check if modal exists
+    const modalElement = document.getElementById('paymentModal');
+    const selectedNameElement = document.getElementById('selected-group-name');
+    
+    console.log('Modal element:', modalElement);
+    console.log('Selected name element:', selectedNameElement);
+    
+    if (!modalElement) {
+        alert('❌ Modal element not found!');
+        return;
+    }
+    
+    if (!selectedNameElement) {
+        alert('❌ Selected group name element not found!');
+        return;
+    }
+    
+    // Update modal with test data
+    selectedNameElement.textContent = 'Grupo de Teste';
+    
+    // Show payment modal
+    console.log('Showing payment modal...');
+    try {
+        const paymentModal = new bootstrap.Modal(modalElement);
+        paymentModal.show();
+        console.log('✅ Modal show() called successfully');
+        alert('✅ Modal funcionando! Se você vê este alert, o JavaScript está OK.');
+    } catch (error) {
+        console.error('❌ Error showing modal:', error);
+        alert('❌ Erro ao mostrar modal: ' + error.message);
+    }
 }
 </script>
 {% endblock %}
