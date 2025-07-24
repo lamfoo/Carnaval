@@ -516,13 +516,25 @@ setTimeout(function() {
 }, 1500);
 
 function showPaymentStep(step) {
+    console.log('🔄 showPaymentStep called with step:', step);
+    
     // Hide all steps
-    document.querySelectorAll('.payment-step').forEach(function(el) {
+    const allSteps = document.querySelectorAll('.payment-step');
+    console.log('📋 Found payment steps:', allSteps.length);
+    
+    allSteps.forEach(function(el) {
         el.classList.add('d-none');
+        console.log('👀 Hiding step:', el.id);
     });
     
     // Show selected step
-    document.getElementById('payment-step-' + step).classList.remove('d-none');
+    const targetStep = document.getElementById('payment-step-' + step);
+    if (targetStep) {
+        targetStep.classList.remove('d-none');
+        console.log('✅ Showing step:', targetStep.id);
+    } else {
+        console.error('❌ Target step not found: payment-step-' + step);
+    }
 }
 
 function resetPaymentModal() {
@@ -556,13 +568,24 @@ function initiatePayment(phoneNumber, grupoId, categoria) {
             window.currentPaymentId = data.payment_id;
             document.getElementById('transaction-reference').textContent = data.transaction_reference;
             
+            console.log('💳 Payment initiated successfully, ID:', data.payment_id);
+            
+            // Clear any existing interval first
+            if (window.paymentCheckInterval) {
+                clearInterval(window.paymentCheckInterval);
+                console.log('🧹 Cleared existing payment check interval');
+            }
+            
             // Start checking payment status
+            console.log('⏰ Starting payment status checks every 3 seconds...');
             window.paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
             
             // Auto-timeout after 3 minutes (tempo real do M-Pesa)
             setTimeout(function() {
                 if (window.paymentCheckInterval) {
+                    console.log('⏰ 3-minute timeout reached, stopping checks');
                     clearInterval(window.paymentCheckInterval);
+                    window.paymentCheckInterval = null;
                     showPaymentError('⏰ Tempo limite de 3 minutos esgotado. O sistema M-Pesa cancela automaticamente após este período. Tente novamente.');
                 }
             }, 180000); // 3 minutes
@@ -582,37 +605,60 @@ function initiatePayment(phoneNumber, grupoId, categoria) {
 }
 
 function checkPaymentStatus() {
-    if (!window.currentPaymentId) return;
+    if (!window.currentPaymentId) {
+        console.log('❌ No payment ID set, stopping check');
+        return;
+    }
+    
+    console.log('🔍 Checking payment status for ID:', window.currentPaymentId);
     
     fetch(`{% url "votacao:verificar_pagamento" %}?payment_id=${window.currentPaymentId}`)
     .then(response => response.json())
     .then(data => {
         console.log('Payment status response:', data);
         
-        if (data.is_successful) {
-            console.log('✅ Payment successful, checking vote processing...');
-            console.log('Vote processed flag:', data.vote_processed);
-            console.log('Group name:', data.grupo_nome);
+        // Force success if payment is completed with INS-0
+        if (data.is_successful || (data.status === 'completed' && data.response_desc === 'Request processed successfully')) {
+            console.log('✅ Payment successful, forcing success screen...');
             
-            clearInterval(window.paymentCheckInterval);
-            window.paymentCheckInterval = null;
-            
-            if (data.vote_processed) {
-                console.log('✅ Vote processed successfully, showing success screen');
-                document.getElementById('voted-group-name').textContent = data.grupo_nome || 'Grupo selecionado';
-                showPaymentStep(3);
-                
-                // Update page to reflect vote
-                setTimeout(function() {
-                    console.log('🔄 Reloading page to show updated results...');
-                    location.reload();
-                }, 3000);
-            } else {
-                console.log('⚠️ Payment successful but vote not processed yet, continuing to check...');
-                // Continue checking if vote hasn't been processed yet
-                window.paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
+            // FORCE stop all intervals
+            if (window.paymentCheckInterval) {
+                clearInterval(window.paymentCheckInterval);
+                window.paymentCheckInterval = null;
+                console.log('✅ Payment check interval cleared');
             }
+            
+            // FORCE show success screen
+            const votedGroupElement = document.getElementById('voted-group-name');
+            if (votedGroupElement) {
+                votedGroupElement.textContent = data.grupo_nome || 'Grupo selecionado';
+                console.log('✅ Group name set to:', data.grupo_nome);
+            } else {
+                console.error('❌ Element voted-group-name not found in DOM!');
+            }
+            
+            console.log('✅ FORCING showPaymentStep(3)...');
+            showPaymentStep(3);
+            
+            // Verify step is shown
+            setTimeout(function() {
+                const step3 = document.getElementById('payment-step-3');
+                if (step3 && !step3.classList.contains('d-none')) {
+                    console.log('✅ SUCCESS! Step 3 is now visible');
+                } else {
+                    console.error('❌ Step 3 is still hidden! Trying again...');
+                    showPaymentStep(3);
+                }
+            }, 100);
+            
+            // Reload page after delay
+            setTimeout(function() {
+                console.log('🔄 Reloading page to show updated results...');
+                location.reload();
+            }, 3000);
+            
         } else if (data.status === 'failed') {
+            console.log('❌ Payment failed');
             clearInterval(window.paymentCheckInterval);
             window.paymentCheckInterval = null;
             showPaymentError('❌ Pagamento falhou: ' + (data.response_desc || 'Motivo desconhecido'));
@@ -622,7 +668,7 @@ function checkPaymentStatus() {
             window.paymentCheckInterval = null;
             showPaymentError('⏰ Timeout: O PIN M-Pesa não foi inserido a tempo. O usuário tem 2 minutos para confirmar. Tente novamente.');
         } else if (data.status === 'processing') {
-            console.log('🔄 Payment still processing, will check again...');
+            console.log('🔄 Payment still processing, will check again in 3 seconds...');
             // Continue checking for processing payments
         } else {
             console.log('ℹ️ Payment status:', data.status, '- continuing to check...');
@@ -631,6 +677,7 @@ function checkPaymentStatus() {
     })
     .catch(error => {
         console.error('Error checking payment:', error);
+        console.log('🔄 Will retry in 3 seconds...');
     });
 }
 
