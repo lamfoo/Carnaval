@@ -16,13 +16,15 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env file (optional)
+# Load environment variables from .env file (REQUIRED for M-Pesa)
 try:
     from dotenv import load_dotenv
     load_dotenv(BASE_DIR / '.env')
 except ImportError:
-    # python-dotenv not installed, skip loading .env file
-    pass
+    raise ImportError(
+        "python-dotenv is required for M-Pesa integration. "
+        "Install it with: pip install python-dotenv"
+    )
 
 
 # Quick-start development settings - unsuitable for production
@@ -191,3 +193,12 @@ SILENCED_SYSTEM_CHECKS = [
     'django_ratelimit.E003',
     'django_ratelimit.W001'
 ]
+
+# Validate M-Pesa credentials are loaded
+if MPESA_API_KEY == 'demo_api_key' or MPESA_PUBLIC_KEY == 'demo_public_key':
+    import warnings
+    warnings.warn(
+        "⚠️  M-Pesa credentials not properly loaded from .env file! "
+        "Gateway will not work correctly. Check your .env file configuration.",
+        UserWarning
+    )
