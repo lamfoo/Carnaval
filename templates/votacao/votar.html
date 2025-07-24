@@ -559,20 +559,25 @@ function initiatePayment(phoneNumber, grupoId, categoria) {
             // Start checking payment status
             window.paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
             
-            // Auto-timeout after 5 minutes
+            // Auto-timeout after 3 minutes (tempo real do M-Pesa)
             setTimeout(function() {
                 if (window.paymentCheckInterval) {
                     clearInterval(window.paymentCheckInterval);
-                    showPaymentError('Tempo limite esgotado. Tente novamente.');
+                    showPaymentError('⏰ Tempo limite de 3 minutos esgotado. O sistema M-Pesa cancela automaticamente após este período. Tente novamente.');
                 }
-            }, 300000); // 5 minutes
+            }, 180000); // 3 minutes
         } else {
-            showPaymentError(data.error);
+            // Verificar se é erro de timeout específico
+            if (data.timeout) {
+                showPaymentError('⏰ ' + data.error + ' Verifique se recebeu a notificação USSD no seu telefone.');
+            } else {
+                showPaymentError('❌ ' + data.error);
+            }
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showPaymentError('Erro de comunicação. Tente novamente.');
+        showPaymentError('🔌 Erro de comunicação com o servidor. Verifique sua conexão e tente novamente.');
     });
 }
 
@@ -597,10 +602,14 @@ function checkPaymentStatus() {
                     location.reload();
                 }, 3000);
             }
-        } else if (data.status === 'failed' || data.status === 'timeout') {
+        } else if (data.status === 'failed') {
             clearInterval(window.paymentCheckInterval);
             window.paymentCheckInterval = null;
-            showPaymentError(data.response_desc || 'Pagamento falhou');
+            showPaymentError('❌ Pagamento falhou: ' + (data.response_desc || 'Motivo desconhecido'));
+        } else if (data.status === 'timeout') {
+            clearInterval(window.paymentCheckInterval);
+            window.paymentCheckInterval = null;
+            showPaymentError('⏰ Timeout: O PIN M-Pesa não foi inserido a tempo. O usuário tem 2 minutos para confirmar. Tente novamente.');
         }
     })
     .catch(error => {

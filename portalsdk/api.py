@@ -49,9 +49,22 @@ class APIRequest:
         return APIResponse(r.status_code, json.loads(r.headers.__str__().replace("'", '"')), json.loads(r.text))
 
     def __post(self):
-        r = requests.post(self.context.get_url(), headers=self.context.get_headers(), json=self.context.get_parameters())
-        print(r)
-        return APIResponse(r.status_code, json.loads(r.headers.__str__().replace("'", '"')), json.loads(r.text))
+        try:
+            # Timeout de 120 segundos para permitir inserção do PIN
+            r = requests.post(
+                self.context.get_url(), 
+                headers=self.context.get_headers(), 
+                json=self.context.get_parameters(),
+                timeout=120
+            )
+            print(f"M-Pesa Response: {r.status_code} - {r.text}")
+            return APIResponse(r.status_code, json.loads(r.headers.__str__().replace("'", '"')), json.loads(r.text))
+        except requests.exceptions.Timeout:
+            print("M-Pesa Request Timeout")
+            return APIResponse(408, {}, {"error": "Request timeout - user may not have entered PIN in time"})
+        except requests.exceptions.RequestException as e:
+            print(f"M-Pesa Request Error: {e}")
+            return APIResponse(500, {}, {"error": str(e)})
 
     def __put(self):
         print('PUT')

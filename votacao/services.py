@@ -169,6 +169,19 @@ class MPesaService:
                         'success': False,
                         'error': f"Pagamento falhou: {error_msg}"
                     }
+            elif result.status_code == 408:
+                # Timeout - usuário não inseriu PIN a tempo
+                payment.status = 'timeout'
+                payment.response_desc = 'Timeout - PIN não inserido a tempo'
+                payment.save()
+                
+                logger.warning(f"Timeout no pagamento: {transaction_ref}")
+                
+                return {
+                    'success': False,
+                    'error': 'Tempo esgotado. O usuário deve inserir o PIN M-Pesa em até 2 minutos. Tente novamente.',
+                    'timeout': True
+                }
             else:
                 payment.status = 'failed'
                 payment.response_desc = f'HTTP {result.status_code}'
@@ -176,9 +189,23 @@ class MPesaService:
                 
                 logger.error(f"Erro HTTP: {result.status_code}")
                 
+                # Mensagens específicas para códigos de erro comuns
+                error_messages = {
+                    400: 'Dados inválidos enviados para M-Pesa',
+                    401: 'Erro de autenticação M-Pesa',
+                    403: 'Acesso negado pelo M-Pesa',
+                    404: 'Serviço M-Pesa não encontrado',
+                    429: 'Muitas tentativas. Aguarde alguns minutos',
+                    500: 'Erro interno do servidor M-Pesa',
+                    502: 'Gateway M-Pesa indisponível',
+                    503: 'Serviço M-Pesa temporariamente indisponível'
+                }
+                
+                error_msg = error_messages.get(result.status_code, f'Erro na comunicação com M-Pesa (HTTP {result.status_code})')
+                
                 return {
                     'success': False,
-                    'error': f'Erro na comunicação com M-Pesa (HTTP {result.status_code})'
+                    'error': error_msg
                 }
                 
         except Exception as e:
