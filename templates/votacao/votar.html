@@ -429,3 +429,317 @@ function showMessage(message, type = 'info') {
 }
 </script>
 {% endblock %}
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="paymentModalLabel">
+                    <i class="bi bi-credit-card me-2"></i>
+                    Pagamento para Votação
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Payment Step 1: Phone Number -->
+                <div id="payment-step-1" class="payment-step">
+                    <div class="text-center mb-4">
+                        <div class="payment-icon mb-3">
+                            <i class="bi bi-phone text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                        <h4>Confirme seu voto</h4>
+                        <p class="text-muted">Para votar no grupo <strong id="selected-group-name"></strong>, é necessário pagar <strong>{{ settings.VOTE_PRICE }} MZN</strong> via M-Pesa</p>
+                    </div>
+                    
+                    <form id="payment-form">
+                        <div class="mb-3">
+                            <label for="phone-number" class="form-label">
+                                <i class="bi bi-telephone me-1"></i>
+                                Número de Telefone M-Pesa
+                            </label>
+                            <input type="tel" 
+                                   class="form-control form-control-lg" 
+                                   id="phone-number" 
+                                   placeholder="258843330333 ou 843330333"
+                                   pattern="[0-9]{9,12}"
+                                   required>
+                            <div class="form-text">
+                                Digite seu número no formato: 258843330333 ou 843330333
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Como funciona:</strong>
+                            <ol class="mb-0 mt-2">
+                                <li>Digite seu número de telefone M-Pesa</li>
+                                <li>Clique em "Pagar e Votar"</li>
+                                <li>Você receberá uma notificação USSD no seu telefone</li>
+                                <li>Digite seu PIN M-Pesa para confirmar o pagamento</li>
+                                <li>Seu voto será registrado automaticamente</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-credit-card me-2"></i>
+                                Pagar 10 MZN e Votar
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Payment Step 2: Processing -->
+                <div id="payment-step-2" class="payment-step d-none">
+                    <div class="text-center">
+                        <div class="payment-icon mb-3">
+                            <div class="loading-spinner text-primary" style="font-size: 3rem;"></div>
+                        </div>
+                        <h4>Processando Pagamento...</h4>
+                        <p class="text-muted">Aguarde enquanto processamos seu pagamento via M-Pesa</p>
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Verifique seu telefone!</strong><br>
+                            Você deve receber uma notificação USSD para confirmar o pagamento.
+                        </div>
+                        
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 100%"></div>
+                        </div>
+                        
+                        <small class="text-muted">
+                            Referência da transação: <span id="transaction-reference"></span>
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Payment Step 3: Success -->
+                <div id="payment-step-3" class="payment-step d-none">
+                    <div class="text-center">
+                        <div class="payment-icon mb-3">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                        </div>
+                        <h4 class="text-success">Pagamento Concluído!</h4>
+                        <p class="text-muted">Seu voto foi registrado com sucesso</p>
+                        
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Obrigado por participar do <strong>Carnaval da Beira</strong>!<br>
+                            Seu voto para <strong id="voted-group-name"></strong> foi confirmado.
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'votacao:resultados' %}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-bar-chart me-2"></i>
+                                Ver Resultados
+                            </a>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Step 4: Error -->
+                <div id="payment-step-4" class="payment-step d-none">
+                    <div class="text-center">
+                        <div class="payment-icon mb-3">
+                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 3rem;"></i>
+                        </div>
+                        <h4 class="text-danger">Erro no Pagamento</h4>
+                        <p class="text-muted">Não foi possível processar seu pagamento</p>
+                        
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <span id="payment-error-message"></span>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" onclick="resetPaymentModal()">
+                                <i class="bi bi-arrow-repeat me-2"></i>
+                                Tentar Novamente
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Payment Modal Variables
+let currentPaymentId = null;
+let currentGrupoId = null;
+let currentCategoria = null;
+let paymentCheckInterval = null;
+
+// Update the existing JavaScript to integrate payment
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Voting page loaded - initializing voting system with payment');
+    
+    // Initialize voting system for each category
+    const categories = {{ categorias_info|length }};
+    console.log('Total categories:', categories);
+    
+    {% for categoria_info in categorias_info %}
+    {% if not categoria_info.ja_votou %}
+    console.log('Initializing category:', '{{ categoria_info.codigo }}');
+    initCategoryVoting('{{ categoria_info.codigo }}');
+    {% endif %}
+    {% endfor %}
+    
+    // Alternative direct approach for button clicks - Modified for payment
+    setTimeout(function() {
+        document.querySelectorAll('.select-group-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Direct button click detected');
+                
+                const card = this.closest('.voting-card');
+                const categoria = card.dataset.categoria;
+                const grupoId = card.dataset.grupoId;
+                const grupoNome = card.querySelector('.card-title').textContent.trim();
+                
+                console.log('Category:', categoria, 'Group ID:', grupoId, 'Group Name:', grupoNome);
+                
+                // Store selection data
+                currentGrupoId = grupoId;
+                currentCategoria = categoria;
+                
+                // Update modal with group name
+                document.getElementById('selected-group-name').textContent = grupoNome;
+                
+                // Show payment modal
+                const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+                paymentModal.show();
+            });
+        });
+    }, 500);
+    
+    // Payment form submission
+    document.getElementById('payment-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const phoneNumber = document.getElementById('phone-number').value.trim();
+        
+        if (!phoneNumber) {
+            alert('Por favor, digite seu número de telefone');
+            return;
+        }
+        
+        // Show processing step
+        showPaymentStep(2);
+        
+        // Initiate payment
+        initiatePayment(phoneNumber, currentGrupoId, currentCategoria);
+    });
+});
+
+function showPaymentStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.payment-step').forEach(function(el) {
+        el.classList.add('d-none');
+    });
+    
+    // Show selected step
+    document.getElementById('payment-step-' + step).classList.remove('d-none');
+}
+
+function resetPaymentModal() {
+    showPaymentStep(1);
+    document.getElementById('phone-number').value = '';
+    document.getElementById('payment-error-message').textContent = '';
+    if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+    }
+}
+
+function initiatePayment(phoneNumber, grupoId, categoria) {
+    const data = {
+        phone_number: phoneNumber,
+        grupo_id: grupoId,
+        categoria: categoria
+    };
+    
+    fetch('{% url "votacao:iniciar_pagamento" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentPaymentId = data.payment_id;
+            document.getElementById('transaction-reference').textContent = data.transaction_reference;
+            
+            // Start checking payment status
+            paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
+            
+            // Auto-timeout after 5 minutes
+            setTimeout(function() {
+                if (paymentCheckInterval) {
+                    clearInterval(paymentCheckInterval);
+                    showPaymentError('Tempo limite esgotado. Tente novamente.');
+                }
+            }, 300000); // 5 minutes
+        } else {
+            showPaymentError(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showPaymentError('Erro de comunicação. Tente novamente.');
+    });
+}
+
+function checkPaymentStatus() {
+    if (!currentPaymentId) return;
+    
+    fetch(`{% url "votacao:verificar_pagamento" %}?payment_id=${currentPaymentId}`)
+    .then(response => response.json())
+    .then(data => {
+        console.log('Payment status:', data);
+        
+        if (data.is_successful) {
+            clearInterval(paymentCheckInterval);
+            
+            if (data.vote_processed) {
+                document.getElementById('voted-group-name').textContent = data.grupo_nome;
+                showPaymentStep(3);
+                
+                // Update page to reflect vote
+                setTimeout(function() {
+                    location.reload();
+                }, 3000);
+            }
+        } else if (data.status === 'failed' || data.status === 'timeout') {
+            clearInterval(paymentCheckInterval);
+            showPaymentError(data.response_desc || 'Pagamento falhou');
+        }
+    })
+    .catch(error => {
+        console.error('Error checking payment:', error);
+    });
+}
+
+function showPaymentError(message) {
+    document.getElementById('payment-error-message').textContent = message;
+    showPaymentStep(4);
+}
+</script>
+{% endblock %}

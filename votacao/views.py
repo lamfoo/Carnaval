@@ -9,6 +9,12 @@ from django_ratelimit.decorators import ratelimit
 from grupos.models import Grupo
 from .models import Voto, ResultadoVotacao, VotingSession, generate_device_id
 import hashlib
+import json
+import logging
+from django.urls import reverse
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 def get_client_ip(request):
@@ -31,6 +37,189 @@ def get_or_create_device_id(request):
         request.session.set_expiry(60 * 60 * 24 * 30)  # 30 days
     
     return request.session['device_id']
+
+
+@ratelimit(key='ip', rate='10/m', method=['GET', 'POST'])
+def iniciar_pagamento(request):
+    """Inicia processo de pagamento para voto"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método não permitido'})
+    
+    try:
+        data = json.loads(request.body)
+        phone_number = data.get('phone_number', '').strip()
+        grupo_id = data.get('grupo_id')
+        categoria = data.get('categoria')
+        
+        if not all([phone_number, grupo_id, categoria]):
+            return JsonResponse({
+                'success': False, 
+                'error': 'Dados obrigatórios não fornecidos'
+            })
+        
+        # Verifica se o grupo existe
+        try:
+            from grupos.models import Grupo
+            grupo = Grupo.objects.get(id=grupo_id, ativo=True)
+        except Grupo.DoesNotExist:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Grupo não encontrado'
+            })
+        
+        # Verifica se categoria é válida
+        if categoria not in ['escola_samba', 'bloco_rua']:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Categoria inválida'
+            })
+        
+        # Verifica se o grupo está na categoria correta
+        if grupo.categoria != categoria:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Grupo não pertence à categoria selecionada'
+            })
+        
+        # Obtém device_id e IP
+        device_id = get_or_create_device_id(request)
+        ip_address = get_client_ip(request)
+        
+        # Verifica se já votou nesta categoria
+        if Voto.objects.filter(device_id=device_id, categoria=categoria).exists():
+            return JsonResponse({
+                'success': False, 
+                'error': 'Você já votou nesta categoria'
+            })
+        
+        # Verifica se já tem pagamento pendente
+        from .models import Payment
+        existing_payment = Payment.objects.filter(
+            device_id=device_id,
+            categoria=categoria,
+            status__in=['pending', 'processing']
+        ).first()
+        
+        if existing_payment and not existing_payment.is_expired:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Já existe um pagamento em andamento para esta categoria'
+            })
+        
+        # Inicia pagamento M-Pesa
+        from .services import MPesaService
+        mpesa_service = MPesaService()
+        
+        result = mpesa_service.initiate_payment(
+            phone_number=phone_number,
+            amount=settings.VOTE_PRICE,
+            grupo_id=grupo_id,
+            categoria=categoria,
+            device_id=device_id,
+            ip_address=ip_address
+        )
+        
+        return JsonResponse(result)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Dados JSON inválidos'
+        })
+    except Exception as e:
+        logger.error(f"Erro ao iniciar pagamento: {str(e)}")
+        return JsonResponse({
+            'success': False, 
+            'error': 'Erro interno do servidor'
+        })
+
+
+@ratelimit(key='ip', rate='30/m', method=['GET'])
+def verificar_pagamento(request):
+    """Verifica status de pagamento"""
+    payment_id = request.GET.get('payment_id')
+    
+    if not payment_id:
+        return JsonResponse({
+            'success': False, 
+            'error': 'ID do pagamento não fornecido'
+        })
+    
+    try:
+        from .services import MPesaService
+        mpesa_service = MPesaService()
+        
+        result = mpesa_service.check_payment_status(payment_id)
+        
+        # Se pagamento foi bem-sucedido, processa voto
+        if result.get('is_successful'):
+            device_id = get_or_create_device_id(request)
+            
+            # Verifica se voto já foi processado
+            from .models import Payment
+            payment = Payment.objects.get(id=payment_id)
+            
+            if not Voto.objects.filter(device_id=device_id, categoria=payment.categoria).exists():
+                # Processa o voto
+                voto_result = _processar_voto_apos_pagamento(payment, request)
+                result.update(voto_result)
+        
+        return JsonResponse(result)
+        
+    except Exception as e:
+        logger.error(f"Erro ao verificar pagamento: {str(e)}")
+        return JsonResponse({
+            'success': False, 
+            'error': 'Erro interno do servidor'
+        })
+
+
+def _processar_voto_apos_pagamento(payment, request):
+    """Processa voto após confirmação de pagamento"""
+    try:
+        device_id = get_or_create_device_id(request)
+        ip_address = get_client_ip(request)
+        
+        # Cria o voto
+        voto = Voto.objects.create(
+            grupo=payment.grupo,
+            categoria=payment.categoria,
+            device_id=device_id,
+            ip_address=ip_address
+        )
+        
+        # Atualiza resultados
+        ResultadoVotacao.update_results(payment.categoria)
+        
+        # Atualiza sessão de votação
+        session_key = request.session.session_key
+        if not session_key:
+            request.session.create()
+            session_key = request.session.session_key
+        
+        voting_session, created = VotingSession.objects.get_or_create(
+            session_key=session_key,
+            defaults={
+                'device_id': device_id,
+                'votes_count': 0
+            }
+        )
+        voting_session.votes_count += 1
+        voting_session.save()
+        
+        return {
+            'vote_processed': True,
+            'grupo_nome': payment.grupo.nome_grupo,
+            'categoria': payment.get_categoria_display(),
+            'redirect_url': reverse('votacao:resultados')
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao processar voto após pagamento: {str(e)}")
+        return {
+            'vote_processed': False,
+            'error': 'Erro ao processar voto'
+        }
 
 
 @ratelimit(key='ip', rate='10/m', method='GET')

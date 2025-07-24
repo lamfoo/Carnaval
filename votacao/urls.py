@@ -9,4 +9,8 @@ urlpatterns = [
     path('resultados/', views.resultados, name='resultados'),
     path('resultados/json/', views.resultados_json, name='resultados_json'),
     path('verificar/', views.verificar_voto, name='verificar_voto'),
+    
+    # Payment URLs
+    path('pagamento/iniciar/', views.iniciar_pagamento, name='iniciar_pagamento'),
+    path('pagamento/verificar/', views.verificar_pagamento, name='verificar_pagamento'),
 ]

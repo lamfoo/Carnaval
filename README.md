@@ -46,6 +46,7 @@ Sistema completo de gerenciamento para o Carnaval da Beira, desenvolvido em Djan
 - Python 3.12 ou superior
 - pip (gerenciador de pacotes Python)
 - Git
+- **Conta M-Pesa Developer** (para funcionalidade de pagamento)
 
 ## 🔧 Instalação
 
@@ -71,18 +72,32 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure o banco de dados
+### 4. Configure as credenciais M-Pesa
+```bash
+# Copie o arquivo de exemplo
+cp .env.example .env
+
+# Edite o arquivo .env com suas credenciais M-Pesa
+# Obtenha as credenciais em: https://developer.mpesa.vm.co.mz
+```
+
+**⚠️ Configurações M-Pesa obrigatórias:**
+- `MPESA_PUBLIC_KEY`: Chave pública da sua conta M-Pesa
+- `MPESA_API_KEY`: Chave da API M-Pesa  
+- `MPESA_SERVICE_PROVIDER_CODE`: Código do provedor de serviços (padrão: 171717)
+
+### 5. Configure o banco de dados
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 5. Crie um superusuário
+### 6. Crie um superusuário
 ```bash
 python manage.py createsuperuser
 ```
 
-### 6. Popule com dados de exemplo (opcional)
+### 7. Popule com dados de exemplo (opcional)
 ```bash
 python populate_sample_data.py
 ```
@@ -152,6 +167,57 @@ Acesse `http://localhost:8000/admin` com as credenciais do superusuário criado 
 └─────────────────┘
 UNIQUE(device_id, categoria)
 ```
+
+### Modelo Payment
+```
+┌─────────────────────────┐
+│        PAYMENT          │
+├─────────────────────────┤
+│ id (PK)                 │
+│ transaction_reference   │ (unique)
+│ third_party_reference   │ (unique)
+│ customer_msisdn         │
+│ amount                  │
+│ status                  │
+│ conversation_id         │ (M-Pesa)
+│ transaction_id          │ (M-Pesa)
+│ response_code           │
+│ response_desc           │
+│ grupo (FK)              │ → Grupo
+│ categoria               │
+│ device_id               │
+│ ip_address              │
+│ created_at              │
+│ updated_at              │
+│ expires_at              │
+└─────────────────────────┘
+```
+
+## 💳 Sistema de Pagamento M-Pesa
+
+### Fluxo de Pagamento
+1. **Seleção do Grupo**: Usuário clica em "Selecionar para Voto"
+2. **Modal de Pagamento**: Sistema exibe modal solicitando número M-Pesa
+3. **Validação**: Número é validado (formato moçambicano)
+4. **Transação M-Pesa**: Chamada para API C2B do M-Pesa
+5. **USSD Push**: Usuário recebe notificação no telefone
+6. **Confirmação PIN**: Usuário insere PIN M-Pesa
+7. **Verificação**: Sistema monitora status do pagamento
+8. **Registro do Voto**: Voto é registrado após confirmação
+
+### Características do Pagamento
+- **Preço**: 10 MZN por voto
+- **API**: M-Pesa C2B (Customer-to-Business)
+- **Timeout**: 5 minutos para completar pagamento
+- **Validação**: Números moçambicanos (258xxxxxxxxx)
+- **Segurança**: Transações únicas, logs completos
+- **Status**: Pending → Processing → Completed/Failed
+
+### URLs de Pagamento
+| URL | Descrição |
+|-----|-----------|
+| `/votacao/pagamento/iniciar/` | Inicia processo de pagamento |
+| `/votacao/pagamento/verificar/` | Verifica status do pagamento |
 
 ## 🔒 Segurança Implementada
 

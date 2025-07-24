@@ -123,3 +123,67 @@ class VotingSession(models.Model):
         
     def __str__(self):
         return f"Sessão {self.session_key[:8]}... - {self.votes_count} votos"
+
+
+class Payment(models.Model):
+    """Modelo para rastrear pagamentos de votos"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pendente'),
+        ('processing', 'Processando'),
+        ('completed', 'Concluído'),
+        ('failed', 'Falhou'),
+        ('timeout', 'Timeout'),
+    ]
+    
+    # Dados do pagamento
+    transaction_reference = models.CharField(max_length=50, unique=True)
+    third_party_reference = models.CharField(max_length=50, unique=True)
+    customer_msisdn = models.CharField(max_length=15)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Dados da resposta M-Pesa
+    conversation_id = models.CharField(max_length=100, blank=True, null=True)
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)
+    response_code = models.CharField(max_length=20, blank=True, null=True)
+    response_desc = models.CharField(max_length=200, blank=True, null=True)
+    
+    # Dados do voto associado
+    grupo = models.ForeignKey('grupos.Grupo', on_delete=models.CASCADE)
+    categoria = models.CharField(max_length=20, choices=[
+        ('escola_samba', 'Escola de Samba'),
+        ('bloco_rua', 'Bloco de Rua'),
+    ])
+    device_id = models.CharField(max_length=64)
+    ip_address = models.GenericIPAddressField()
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField()
+    
+    class Meta:
+        verbose_name = 'Pagamento'
+        verbose_name_plural = 'Pagamentos'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['transaction_reference']),
+            models.Index(fields=['conversation_id']),
+            models.Index(fields=['device_id', 'categoria']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return f"Pagamento {self.transaction_reference} - {self.get_status_display()}"
+    
+    @property
+    def is_expired(self):
+        """Verifica se o pagamento expirou"""
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+    
+    @property
+    def is_successful(self):
+        """Verifica se o pagamento foi bem-sucedido"""
+        return self.status == 'completed' and self.response_code == 'INS-0'

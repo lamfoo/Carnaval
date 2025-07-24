@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Count
-from .models import Voto, ResultadoVotacao, VotingSession
+from .models import Voto, ResultadoVotacao, VotingSession, Payment
 
 
 @admin.register(Voto)
@@ -149,6 +149,70 @@ class VotingSessionAdmin(admin.ModelAdmin):
         """Display shortened device ID"""
         return f"{obj.device_id[:8]}...{obj.device_id[-4:]}"
     device_id_short.short_description = 'Device ID'
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = [
+        'transaction_reference', 'customer_msisdn', 'amount', 
+        'grupo', 'categoria_display', 'status', 'created_at'
+    ]
+    list_filter = ['status', 'categoria', 'created_at']
+    search_fields = [
+        'transaction_reference', 'customer_msisdn', 'grupo__nome_grupo',
+        'conversation_id', 'transaction_id'
+    ]
+    readonly_fields = [
+        'transaction_reference', 'third_party_reference', 'conversation_id',
+        'transaction_id', 'response_code', 'response_desc', 'created_at', 'updated_at'
+    ]
+    date_hierarchy = 'created_at'
+    
+    fieldsets = [
+        ('Informações do Pagamento', {
+            'fields': [
+                'transaction_reference', 'third_party_reference', 'customer_msisdn',
+                'amount', 'status'
+            ]
+        }),
+        ('Dados do Voto', {
+            'fields': ['grupo', 'categoria', 'device_id', 'ip_address']
+        }),
+        ('Resposta M-Pesa', {
+            'fields': [
+                'conversation_id', 'transaction_id', 'response_code', 'response_desc'
+            ]
+        }),
+        ('Timestamps', {
+            'fields': ['created_at', 'updated_at', 'expires_at']
+        }),
+    ]
+    
+    def has_add_permission(self, request):
+        """Disable add permission - payments are created automatically"""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Only allow superusers to change payments"""
+        return request.user.is_superuser
+    
+    def categoria_display(self, obj):
+        """Display category with colored badge"""
+        colors = {
+            'escola_samba': 'success',
+            'bloco_rua': 'info'
+        }
+        return format_html(
+            '<span class="badge badge-{}">{}</span>',
+            colors.get(obj.categoria, 'secondary'),
+            obj.get_categoria_display()
+        )
+    categoria_display.short_description = 'Categoria'
+    
+    class Media:
+        css = {
+            'all': ('admin/css/custom_admin.css',)
+        }
 
 
 # Customize admin site header
