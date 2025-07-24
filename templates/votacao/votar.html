@@ -587,29 +587,46 @@ function checkPaymentStatus() {
     fetch(`{% url "votacao:verificar_pagamento" %}?payment_id=${window.currentPaymentId}`)
     .then(response => response.json())
     .then(data => {
-        console.log('Payment status:', data);
+        console.log('Payment status response:', data);
         
         if (data.is_successful) {
+            console.log('✅ Payment successful, checking vote processing...');
+            console.log('Vote processed flag:', data.vote_processed);
+            console.log('Group name:', data.grupo_nome);
+            
             clearInterval(window.paymentCheckInterval);
             window.paymentCheckInterval = null;
             
             if (data.vote_processed) {
-                document.getElementById('voted-group-name').textContent = data.grupo_nome;
+                console.log('✅ Vote processed successfully, showing success screen');
+                document.getElementById('voted-group-name').textContent = data.grupo_nome || 'Grupo selecionado';
                 showPaymentStep(3);
                 
                 // Update page to reflect vote
                 setTimeout(function() {
+                    console.log('🔄 Reloading page to show updated results...');
                     location.reload();
                 }, 3000);
+            } else {
+                console.log('⚠️ Payment successful but vote not processed yet, continuing to check...');
+                // Continue checking if vote hasn't been processed yet
+                window.paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
             }
         } else if (data.status === 'failed') {
             clearInterval(window.paymentCheckInterval);
             window.paymentCheckInterval = null;
             showPaymentError('❌ Pagamento falhou: ' + (data.response_desc || 'Motivo desconhecido'));
         } else if (data.status === 'timeout') {
+            console.log('❌ Payment timeout detected');
             clearInterval(window.paymentCheckInterval);
             window.paymentCheckInterval = null;
             showPaymentError('⏰ Timeout: O PIN M-Pesa não foi inserido a tempo. O usuário tem 2 minutos para confirmar. Tente novamente.');
+        } else if (data.status === 'processing') {
+            console.log('🔄 Payment still processing, will check again...');
+            // Continue checking for processing payments
+        } else {
+            console.log('ℹ️ Payment status:', data.status, '- continuing to check...');
+            // Continue checking for other statuses
         }
     })
     .catch(error => {

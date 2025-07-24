@@ -159,10 +159,25 @@ def verificar_pagamento(request):
             from .models import Payment
             payment = Payment.objects.get(id=payment_id)
             
-            if not Voto.objects.filter(device_id=device_id, categoria=payment.categoria).exists():
+            logger.info(f"Pagamento {payment_id} bem-sucedido, verificando voto para device {device_id}, categoria {payment.categoria}")
+            
+            # Verifica se voto já foi processado
+            existing_vote = Voto.objects.filter(device_id=device_id, categoria=payment.categoria).first()
+            
+            if not existing_vote:
+                logger.info(f"Processando voto para pagamento {payment_id}")
                 # Processa o voto
                 voto_result = _processar_voto_apos_pagamento(payment, request)
                 result.update(voto_result)
+            else:
+                logger.info(f"Voto já processado para device {device_id}, categoria {payment.categoria}")
+                # Voto já foi processado anteriormente
+                result.update({
+                    'vote_processed': True,
+                    'grupo_nome': payment.grupo.nome_grupo,
+                    'categoria': payment.get_categoria_display(),
+                    'redirect_url': reverse('votacao:resultados')
+                })
         
         return JsonResponse(result)
         
