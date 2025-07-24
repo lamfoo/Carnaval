@@ -1,84 +1,42 @@
-import requests
-import json
-import hashlib
 import time
 import uuid
+import random
+import string
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
 import logging
 
+# Importar SDK oficial M-Pesa
+from portalsdk import APIContext, APIMethodType, APIRequest
+
 logger = logging.getLogger(__name__)
 
 
 class MPesaService:
-    """Serviço para integração com M-Pesa API"""
+    """Serviço para integração com M-Pesa usando SDK oficial"""
     
     def __init__(self):
-        self.api_url = settings.MPESA_API_URL
-        self.auth_url = settings.MPESA_AUTH_URL
-        self.c2b_url = settings.MPESA_C2B_URL
-        self.public_key = settings.MPESA_PUBLIC_KEY
         self.api_key = settings.MPESA_API_KEY
+        self.public_key = settings.MPESA_PUBLIC_KEY
         self.service_provider_code = settings.MPESA_SERVICE_PROVIDER_CODE
-        self.origin = settings.MPESA_ORIGIN
-    
-    def get_access_token(self):
-        """Obtém token de acesso do M-Pesa"""
-        # Demo mode check
-        if self.api_key == 'demo_api_key':
-            return 'demo_access_token_12345'
-            
-        cache_key = 'mpesa_access_token'
-        token = cache.get(cache_key)
-        
-        if token:
-            return token
-        
-        try:
-            headers = {
-                'Content-Type': 'application/json',
-                'Origin': self.origin,
-            }
-            
-            data = {
-                'grant_type': 'client_credentials'
-            }
-            
-            response = requests.post(
-                self.auth_url,
-                headers=headers,
-                json=data,
-                auth=(self.api_key, ''),
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                token_data = response.json()
-                access_token = token_data.get('access_token')
-                expires_in = token_data.get('expires_in', 3600)
-                
-                # Cache token por 90% do tempo de expiração
-                cache.set(cache_key, access_token, expires_in * 0.9)
-                return access_token
-            else:
-                logger.error(f"Erro ao obter token M-Pesa: {response.text}")
-                return None
-                
-        except Exception as e:
-            logger.error(f"Exceção ao obter token M-Pesa: {str(e)}")
-            return None
+        self.address = 'api.sandbox.vm.co.mz'
+        self.port = 18352
+        self.path = '/ipg/v1x/c2bPayment/singleStage/'
     
     def generate_transaction_reference(self):
-        """Gera referência única para transação"""
+        """Gera referência única para transação (sempre diferente)"""
         timestamp = str(int(time.time()))
-        random_part = str(uuid.uuid4())[:8]
-        return f"CV{timestamp[-6:]}{random_part.upper()}"
+        random_letters = ''.join(random.choices(string.ascii_uppercase, k=3))
+        random_numbers = ''.join(random.choices(string.digits, k=3))
+        return f"CV{timestamp[-4:]}{random_letters}{random_numbers}"
     
     def generate_third_party_reference(self):
-        """Gera referência única de terceira parte"""
-        return str(uuid.uuid4()).replace('-', '')[:20].upper()
+        """Gera referência única de terceira parte (sempre diferente)"""
+        timestamp = str(int(time.time()))
+        random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        return f"{timestamp[-3:]}{random_part}"
     
     def validate_phone_number(self, phone_number):
         """Valida e formata número de telefone moçambicano"""
@@ -105,7 +63,7 @@ class MPesaService:
         return None
     
     def initiate_payment(self, phone_number, amount, grupo_id, categoria, device_id, ip_address):
-        """Inicia pagamento C2B com M-Pesa"""
+        """Inicia pagamento C2B com M-Pesa usando SDK oficial"""
         from .models import Payment
         
         # Valida número de telefone
@@ -116,17 +74,11 @@ class MPesaService:
                 'error': 'Número de telefone inválido. Use formato: 258843330333 ou 843330333'
             }
         
-        # Obtém token de acesso
-        access_token = self.get_access_token()
-        if not access_token:
-            return {
-                'success': False,
-                'error': 'Erro interno: não foi possível obter token de autenticação'
-            }
-        
-        # Gera referências únicas
+        # Gera referências únicas (sempre diferentes)
         transaction_ref = self.generate_transaction_reference()
         third_party_ref = self.generate_third_party_reference()
+        
+        logger.info(f"Gerando pagamento M-Pesa - TransRef: {transaction_ref}, ThirdPartyRef: {third_party_ref}")
         
         try:
             # Cria registro de pagamento
@@ -146,71 +98,58 @@ class MPesaService:
                 status='processing'
             )
             
-            # Prepara dados para API M-Pesa
-            headers = {
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {access_token}',
-                'Origin': self.origin,
-            }
+            # Configurar contexto da API M-Pesa
+            api_context = APIContext()
+            api_context.api_key = self.api_key
+            api_context.public_key = self.public_key
+            api_context.ssl = True
+            api_context.method_type = APIMethodType.POST
+            api_context.address = self.address
+            api_context.port = self.port
+            api_context.path = self.path
             
-            payload = {
-                'input_TransactionReference': transaction_ref,
-                'input_CustomerMSISDN': formatted_phone,
-                'input_Amount': str(amount),
-                'input_ThirdPartyReference': third_party_ref,
-                'input_ServiceProviderCode': self.service_provider_code
-            }
+            # Adicionar headers
+            api_context.add_header('Origin', '*')
             
-            logger.info(f"Iniciando pagamento M-Pesa: {payload}")
+            # Adicionar parâmetros únicos
+            api_context.add_parameter('input_TransactionReference', transaction_ref)
+            api_context.add_parameter('input_CustomerMSISDN', formatted_phone)
+            api_context.add_parameter('input_Amount', str(amount))
+            api_context.add_parameter('input_ThirdPartyReference', third_party_ref)
+            api_context.add_parameter('input_ServiceProviderCode', self.service_provider_code)
             
-            # Demo mode - simulate successful payment
-            if self.api_key == 'demo_api_key':
-                import random
-                import string
-                
-                # Simulate M-Pesa response
-                fake_conversation_id = f"AG_{''.join(random.choices(string.ascii_uppercase + string.digits, k=20))}"
-                fake_transaction_id = f"{''.join(random.choices(string.ascii_uppercase + string.digits, k=8))}"
-                
-                payment.conversation_id = fake_conversation_id
-                payment.transaction_id = fake_transaction_id
-                payment.response_code = 'INS-0'
-                payment.response_desc = 'Request processed successfully (DEMO MODE)'
-                payment.status = 'completed'
+            logger.info(f"Chamando M-Pesa API: {transaction_ref} para {formatted_phone}")
+            
+            # Executar requisição
+            api_request = APIRequest(api_context)
+            result = api_request.execute()
+            
+            if result is None:
+                payment.status = 'failed'
+                payment.response_desc = 'Connection error to M-Pesa API'
                 payment.save()
-                
-                logger.info(f"DEMO MODE: Pagamento simulado com sucesso para {formatted_phone}")
-                
                 return {
-                    'success': True,
-                    'payment_id': payment.id,
-                    'transaction_reference': transaction_ref,
-                    'conversation_id': payment.conversation_id,
-                    'message': 'Pagamento processado com sucesso! (MODO DEMONSTRAÇÃO)'
+                    'success': False,
+                    'error': 'Erro de conexão com M-Pesa. Tente novamente.'
                 }
             
-            # Real M-Pesa API call
-            response = requests.post(
-                self.c2b_url,
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
+            logger.info(f"Resposta M-Pesa: Status {result.status_code}, Body: {result.body}")
             
-            logger.info(f"Resposta M-Pesa: {response.status_code} - {response.text}")
-            
-            if response.status_code in [200, 201]:
-                response_data = response.json()
+            # Processar resposta
+            if result.status_code in [200, 201]:
+                response_body = result.body
                 
-                # Atualiza dados do pagamento
-                payment.conversation_id = response_data.get('output_ConversationID')
-                payment.transaction_id = response_data.get('output_TransactionID')
-                payment.response_code = response_data.get('output_ResponseCode')
-                payment.response_desc = response_data.get('output_ResponseDesc')
+                # Atualizar dados do pagamento
+                payment.conversation_id = response_body.get('output_ConversationID', '')
+                payment.transaction_id = response_body.get('output_TransactionID', '')
+                payment.response_code = response_body.get('output_ResponseCode', '')
+                payment.response_desc = response_body.get('output_ResponseDesc', '')
                 
-                if response_data.get('output_ResponseCode') == 'INS-0':
+                if response_body.get('output_ResponseCode') == 'INS-0':
                     payment.status = 'completed'
                     payment.save()
+                    
+                    logger.info(f"Pagamento bem-sucedido: {transaction_ref}")
                     
                     return {
                         'success': True,
@@ -223,21 +162,27 @@ class MPesaService:
                     payment.status = 'failed'
                     payment.save()
                     
+                    error_msg = response_body.get('output_ResponseDesc', 'Erro desconhecido')
+                    logger.error(f"Pagamento falhou: {error_msg}")
+                    
                     return {
                         'success': False,
-                        'error': f"Pagamento falhou: {response_data.get('output_ResponseDesc', 'Erro desconhecido')}"
+                        'error': f"Pagamento falhou: {error_msg}"
                     }
             else:
                 payment.status = 'failed'
+                payment.response_desc = f'HTTP {result.status_code}'
                 payment.save()
+                
+                logger.error(f"Erro HTTP: {result.status_code}")
                 
                 return {
                     'success': False,
-                    'error': f'Erro na comunicação com M-Pesa: {response.text}'
+                    'error': f'Erro na comunicação com M-Pesa (HTTP {result.status_code})'
                 }
                 
         except Exception as e:
-            logger.error(f"Erro ao processar pagamento: {str(e)}")
+            logger.error(f"Exceção ao processar pagamento: {str(e)}")
             return {
                 'success': False,
                 'error': 'Erro interno ao processar pagamento'
