@@ -14,11 +14,11 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -181,3 +181,9 @@ MPESA_ORIGIN = 'developer.mpesa.vm.co.mz'
 # Voting payment settings
 VOTE_PRICE = '10'  # Price in MZN for each vote
 PAYMENT_TIMEOUT = 300  # 5 minutes timeout for payment processing
+
+# Silenced system checks
+SILENCED_SYSTEM_CHECKS = [
+    'django_ratelimit.E003',
+    'django_ratelimit.W001'
+]
