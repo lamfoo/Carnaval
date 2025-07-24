@@ -81,10 +81,12 @@ cp .env.example .env
 # Obtenha as credenciais em: https://developer.mpesa.vm.co.mz
 ```
 
-**⚠️ Configurações M-Pesa obrigatórias:**
-- `MPESA_PUBLIC_KEY`: Chave pública da sua conta M-Pesa
-- `MPESA_API_KEY`: Chave da API M-Pesa  
-- `MPESA_SERVICE_PROVIDER_CODE`: Código do provedor de serviços (padrão: 171717)
+**✅ Configurações M-Pesa já incluídas:**
+- `MPESA_PUBLIC_KEY`: ✅ Configurada
+- `MPESA_API_KEY`: ✅ Configurada  
+- `MPESA_SERVICE_PROVIDER_CODE`: ✅ Configurada (171717)
+
+**🎯 O arquivo `.env` já contém as credenciais reais para produção.**
 
 ### 5. Configure o banco de dados
 ```bash
