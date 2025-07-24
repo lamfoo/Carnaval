@@ -169,8 +169,8 @@ CACHES = {
 MPESA_API_URL = 'https://api.sandbox.vm.co.mz:18352'
 MPESA_AUTH_URL = f'{MPESA_API_URL}/ipg/v1x/oauth/token'
 MPESA_C2B_URL = f'{MPESA_API_URL}/ipg/v1x/c2bPayment/singleStage/'
-MPESA_PUBLIC_KEY = os.environ.get('MPESA_PUBLIC_KEY', '')
-MPESA_API_KEY = os.environ.get('MPESA_API_KEY', '')
+MPESA_PUBLIC_KEY = os.environ.get('MPESA_PUBLIC_KEY', 'demo_public_key')
+MPESA_API_KEY = os.environ.get('MPESA_API_KEY', 'demo_api_key')
 MPESA_SERVICE_PROVIDER_CODE = os.environ.get('MPESA_SERVICE_PROVIDER_CODE', '171717')
 MPESA_ORIGIN = 'developer.mpesa.vm.co.mz'
 

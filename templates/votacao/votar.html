@@ -210,14 +210,6 @@ Sistema de votação popular seguro com uma votação por categoria por disposit
     {% endif %}
     {% endfor %}
 
-    <!-- Test Button (temporary for debugging) -->
-    <div class="text-center py-3">
-        <button type="button" class="btn btn-warning" onclick="testPaymentModal()">
-            <i class="bi bi-gear me-2"></i>
-            🧪 TESTE: Abrir Modal de Pagamento
-        </button>
-    </div>
-
     <!-- Results Link -->
     <div class="text-center py-5">
         <h3 class="text-carnival-primary mb-3">Quer ver como está a votação?</h3>
@@ -265,6 +257,13 @@ Sistema de votação popular seguro com uma votação por categoria por disposit
                                 <div class="form-text">
                                     Digite seu número no formato: 258843330333 ou 843330333
                                 </div>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>🧪 MODO DEMONSTRAÇÃO</strong><br>
+                                Este sistema está em modo de teste. Nenhum pagamento real será processado.
+                                Digite qualquer número de telefone para simular o pagamento.
                             </div>
                             
                             <div class="alert alert-info">
@@ -621,46 +620,7 @@ function showPaymentError(message) {
     showPaymentStep(4);
 }
 
-// Test function for debugging
-function testPaymentModal() {
-    console.log('=== TESTING PAYMENT MODAL ===');
-    
-    // Set test data
-    window.currentGrupoId = '1';
-    window.currentCategoria = 'escola_samba';
-    
-    // Check if modal exists
-    const modalElement = document.getElementById('paymentModal');
-    const selectedNameElement = document.getElementById('selected-group-name');
-    
-    console.log('Modal element:', modalElement);
-    console.log('Selected name element:', selectedNameElement);
-    
-    if (!modalElement) {
-        alert('❌ Modal element not found!');
-        return;
-    }
-    
-    if (!selectedNameElement) {
-        alert('❌ Selected group name element not found!');
-        return;
-    }
-    
-    // Update modal with test data
-    selectedNameElement.textContent = 'Grupo de Teste';
-    
-    // Show payment modal
-    console.log('Showing payment modal...');
-    try {
-        const paymentModal = new bootstrap.Modal(modalElement);
-        paymentModal.show();
-        console.log('✅ Modal show() called successfully');
-        alert('✅ Modal funcionando! Se você vê este alert, o JavaScript está OK.');
-    } catch (error) {
-        console.error('❌ Error showing modal:', error);
-        alert('❌ Erro ao mostrar modal: ' + error.message);
-    }
-}
+
 </script>
 {% endblock %}
 
