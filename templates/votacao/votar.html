@@ -427,6 +427,155 @@ function showMessage(message, type = 'info') {
         }
     }, 5000);
 }
+
+// Payment Modal Variables
+let currentPaymentId = null;
+let currentGrupoId = null;
+let currentCategoria = null;
+let paymentCheckInterval = null;
+
+// Update the existing JavaScript to integrate payment
+// Alternative direct approach for button clicks - Modified for payment
+setTimeout(function() {
+    document.querySelectorAll('.select-group-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Payment button click detected');
+            
+            const card = this.closest('.voting-card');
+            const categoria = card.dataset.categoria;
+            const grupoId = card.dataset.grupoId;
+            const grupoNome = card.querySelector('.card-title').textContent.trim();
+            
+            console.log('Category:', categoria, 'Group ID:', grupoId, 'Group Name:', grupoNome);
+            
+            // Store selection data
+            currentGrupoId = grupoId;
+            currentCategoria = categoria;
+            
+            // Update modal with group name
+            document.getElementById('selected-group-name').textContent = grupoNome;
+            
+            // Show payment modal
+            const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+            paymentModal.show();
+        });
+    });
+}, 500);
+
+// Payment form submission
+document.getElementById('payment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const phoneNumber = document.getElementById('phone-number').value.trim();
+    
+    if (!phoneNumber) {
+        alert('Por favor, digite seu número de telefone');
+        return;
+    }
+    
+    // Show processing step
+    showPaymentStep(2);
+    
+    // Initiate payment
+    initiatePayment(phoneNumber, currentGrupoId, currentCategoria);
+});
+
+function showPaymentStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.payment-step').forEach(function(el) {
+        el.classList.add('d-none');
+    });
+    
+    // Show selected step
+    document.getElementById('payment-step-' + step).classList.remove('d-none');
+}
+
+function resetPaymentModal() {
+    showPaymentStep(1);
+    document.getElementById('phone-number').value = '';
+    document.getElementById('payment-error-message').textContent = '';
+    if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+    }
+}
+
+function initiatePayment(phoneNumber, grupoId, categoria) {
+    const data = {
+        phone_number: phoneNumber,
+        grupo_id: grupoId,
+        categoria: categoria
+    };
+    
+    fetch('{% url "votacao:iniciar_pagamento" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentPaymentId = data.payment_id;
+            document.getElementById('transaction-reference').textContent = data.transaction_reference;
+            
+            // Start checking payment status
+            paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
+            
+            // Auto-timeout after 5 minutes
+            setTimeout(function() {
+                if (paymentCheckInterval) {
+                    clearInterval(paymentCheckInterval);
+                    showPaymentError('Tempo limite esgotado. Tente novamente.');
+                }
+            }, 300000); // 5 minutes
+        } else {
+            showPaymentError(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showPaymentError('Erro de comunicação. Tente novamente.');
+    });
+}
+
+function checkPaymentStatus() {
+    if (!currentPaymentId) return;
+    
+    fetch(`{% url "votacao:verificar_pagamento" %}?payment_id=${currentPaymentId}`)
+    .then(response => response.json())
+    .then(data => {
+        console.log('Payment status:', data);
+        
+        if (data.is_successful) {
+            clearInterval(paymentCheckInterval);
+            
+            if (data.vote_processed) {
+                document.getElementById('voted-group-name').textContent = data.grupo_nome;
+                showPaymentStep(3);
+                
+                // Update page to reflect vote
+                setTimeout(function() {
+                    location.reload();
+                }, 3000);
+            }
+        } else if (data.status === 'failed' || data.status === 'timeout') {
+            clearInterval(paymentCheckInterval);
+            showPaymentError(data.response_desc || 'Pagamento falhou');
+        }
+    })
+    .catch(error => {
+        console.error('Error checking payment:', error);
+    });
+}
+
+function showPaymentError(message) {
+    document.getElementById('payment-error-message').textContent = message;
+    showPaymentStep(4);
+}
 </script>
 {% endblock %}
 
@@ -576,170 +725,3 @@ function showMessage(message, type = 'info') {
     </div>
 </div>
 
-{% block extra_js %}
-<script>
-// Payment Modal Variables
-let currentPaymentId = null;
-let currentGrupoId = null;
-let currentCategoria = null;
-let paymentCheckInterval = null;
-
-// Update the existing JavaScript to integrate payment
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Voting page loaded - initializing voting system with payment');
-    
-    // Initialize voting system for each category
-    const categories = {{ categorias_info|length }};
-    console.log('Total categories:', categories);
-    
-    {% for categoria_info in categorias_info %}
-    {% if not categoria_info.ja_votou %}
-    console.log('Initializing category:', '{{ categoria_info.codigo }}');
-    initCategoryVoting('{{ categoria_info.codigo }}');
-    {% endif %}
-    {% endfor %}
-    
-    // Alternative direct approach for button clicks - Modified for payment
-    setTimeout(function() {
-        document.querySelectorAll('.select-group-btn').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Direct button click detected');
-                
-                const card = this.closest('.voting-card');
-                const categoria = card.dataset.categoria;
-                const grupoId = card.dataset.grupoId;
-                const grupoNome = card.querySelector('.card-title').textContent.trim();
-                
-                console.log('Category:', categoria, 'Group ID:', grupoId, 'Group Name:', grupoNome);
-                
-                // Store selection data
-                currentGrupoId = grupoId;
-                currentCategoria = categoria;
-                
-                // Update modal with group name
-                document.getElementById('selected-group-name').textContent = grupoNome;
-                
-                // Show payment modal
-                const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-                paymentModal.show();
-            });
-        });
-    }, 500);
-    
-    // Payment form submission
-    document.getElementById('payment-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const phoneNumber = document.getElementById('phone-number').value.trim();
-        
-        if (!phoneNumber) {
-            alert('Por favor, digite seu número de telefone');
-            return;
-        }
-        
-        // Show processing step
-        showPaymentStep(2);
-        
-        // Initiate payment
-        initiatePayment(phoneNumber, currentGrupoId, currentCategoria);
-    });
-});
-
-function showPaymentStep(step) {
-    // Hide all steps
-    document.querySelectorAll('.payment-step').forEach(function(el) {
-        el.classList.add('d-none');
-    });
-    
-    // Show selected step
-    document.getElementById('payment-step-' + step).classList.remove('d-none');
-}
-
-function resetPaymentModal() {
-    showPaymentStep(1);
-    document.getElementById('phone-number').value = '';
-    document.getElementById('payment-error-message').textContent = '';
-    if (paymentCheckInterval) {
-        clearInterval(paymentCheckInterval);
-    }
-}
-
-function initiatePayment(phoneNumber, grupoId, categoria) {
-    const data = {
-        phone_number: phoneNumber,
-        grupo_id: grupoId,
-        categoria: categoria
-    };
-    
-    fetch('{% url "votacao:iniciar_pagamento" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            currentPaymentId = data.payment_id;
-            document.getElementById('transaction-reference').textContent = data.transaction_reference;
-            
-            // Start checking payment status
-            paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
-            
-            // Auto-timeout after 5 minutes
-            setTimeout(function() {
-                if (paymentCheckInterval) {
-                    clearInterval(paymentCheckInterval);
-                    showPaymentError('Tempo limite esgotado. Tente novamente.');
-                }
-            }, 300000); // 5 minutes
-        } else {
-            showPaymentError(data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showPaymentError('Erro de comunicação. Tente novamente.');
-    });
-}
-
-function checkPaymentStatus() {
-    if (!currentPaymentId) return;
-    
-    fetch(`{% url "votacao:verificar_pagamento" %}?payment_id=${currentPaymentId}`)
-    .then(response => response.json())
-    .then(data => {
-        console.log('Payment status:', data);
-        
-        if (data.is_successful) {
-            clearInterval(paymentCheckInterval);
-            
-            if (data.vote_processed) {
-                document.getElementById('voted-group-name').textContent = data.grupo_nome;
-                showPaymentStep(3);
-                
-                // Update page to reflect vote
-                setTimeout(function() {
-                    location.reload();
-                }, 3000);
-            }
-        } else if (data.status === 'failed' || data.status === 'timeout') {
-            clearInterval(paymentCheckInterval);
-            showPaymentError(data.response_desc || 'Pagamento falhou');
-        }
-    })
-    .catch(error => {
-        console.error('Error checking payment:', error);
-    });
-}
-
-function showPaymentError(message) {
-    document.getElementById('payment-error-message').textContent = message;
-    showPaymentStep(4);
-}
-</script>
-{% endblock %}
