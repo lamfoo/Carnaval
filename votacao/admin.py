@@ -200,15 +200,16 @@ class PaymentAdmin(admin.ModelAdmin):
     
     def categoria_display(self, obj):
         """Display category with colored badge"""
-        colors = {
-            'escola_samba': 'success',
-            'bloco_rua': 'info'
-        }
-        return format_html(
-            '<span class="badge badge-{}">{}</span>',
-            colors.get(obj.categoria, 'secondary'),
-            obj.get_categoria_display()
-        )
+        if obj.categoria:
+            return format_html(
+                '<span style="background: {}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem;">'
+                '<i class="{}"></i> {}'
+                '</span>',
+                obj.categoria.cor_primaria,
+                obj.categoria.icone,
+                obj.categoria.nome
+            )
+        return "Sem categoria"
     categoria_display.short_description = 'Categoria'
     
     class Media:
