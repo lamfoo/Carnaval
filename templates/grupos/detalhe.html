@@ -1,0 +1,598 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ grupo.nome_grupo }} - Carnaval da Beira{% endblock %}
+
+{% block meta_description %}{{ grupo.descricao|truncatewords:25 }} - Grupo {{ grupo.get_categoria_display }} no Carnaval da Beira{% endblock %}
+
+{% block extra_css %}
+<style>
+.group-hero {
+    background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.group-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M20 20c0 11.046-8.954 20-20 20v20h40V20c0-11.046-8.954-20-20-20z'/%3E%3C/g%3E%3C/svg%3E");
+    z-index: 0;
+}
+
+.group-hero .container {
+    position: relative;
+    z-index: 1;
+}
+
+.group-photo {
+    max-width: 100%;
+    height: auto;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+}
+
+.group-photo:hover {
+    transform: scale(1.02);
+}
+
+.group-info-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    border: none;
+}
+
+.group-stats {
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+}
+
+.stat-item {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #FF6B35;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.category-badge {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.categoria-escola_samba {
+    background: linear-gradient(45deg, #dc3545, #fd7e14);
+    color: white;
+}
+
+.categoria-bloco_rua {
+    background: linear-gradient(45deg, #198754, #20c997);
+    color: white;
+}
+
+.vote-section {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 2px solid #e9ecef;
+    text-align: center;
+}
+
+.vote-button {
+    background: linear-gradient(45deg, #FF6B35, #F7931E);
+    border: none;
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+}
+
+.vote-button:hover {
+    background: linear-gradient(45deg, #F7931E, #FF6B35);
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+}
+
+.vote-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.related-group-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.related-group-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+
+.related-group-img {
+    height: 200px;
+    object-fit: cover;
+    width: 100%;
+}
+
+.back-button {
+    background: linear-gradient(45deg, #6c757d, #495057);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.back-button:hover {
+    background: linear-gradient(45deg, #495057, #343a40);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 58, 64, 0.3);
+}
+
+.contact-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.description-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #444;
+    text-align: justify;
+}
+
+@media (max-width: 768px) {
+    .group-hero {
+        padding: 2rem 0;
+    }
+    
+    .group-info-card {
+        padding: 1.5rem;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .vote-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Animation for vote section when user already voted */
+.voted-section {
+    background: linear-gradient(135deg, #d1edff 0%, #e8f5e8 100%);
+    border-color: #198754;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Group Hero Section -->
+<section class="group-hero">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb bg-transparent mb-3">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'core:home' %}" class="text-white-50">
+                                <i class="bi bi-house-door me-1"></i>
+                                Início
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'grupos:lista' %}" class="text-white-50">
+                                Grupos
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active text-white" aria-current="page">
+                            {{ grupo.nome_grupo }}
+                        </li>
+                    </ol>
+                </nav>
+                
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="display-4 mb-3">{{ grupo.nome_grupo }}</h1>
+                        <div class="mb-3">
+                            <span class="category-badge categoria-{{ grupo.categoria }}">
+                                {% if grupo.categoria == 'escola_samba' %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% else %}
+                                    <i class="bi bi-people-fill"></i>
+                                {% endif %}
+                                {{ grupo.get_categoria_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <div class="group-stats d-inline-block">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ grupo.total_votos|default:0 }}</span>
+                                <span class="stat-label">Votos</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Content -->
+<main class="container my-5">
+    <div class="row">
+        <!-- Group Information -->
+        <div class="col-lg-8">
+            <!-- Back Button -->
+            <div class="mb-4">
+                <a href="{% url 'grupos:lista' %}" class="back-button">
+                    <i class="bi bi-arrow-left"></i>
+                    Voltar aos Grupos
+                </a>
+            </div>
+            
+            <!-- Group Photo -->
+            {% if grupo.foto %}
+            <div class="text-center mb-4">
+                <img src="{{ grupo.foto.url }}" 
+                     alt="{{ grupo.nome_grupo }}" 
+                     class="group-photo"
+                     loading="lazy">
+            </div>
+            {% endif %}
+            
+            <!-- Group Information Card -->
+            <div class="group-info-card">
+                <h2 class="h3 mb-4">
+                    <i class="bi bi-info-circle text-primary me-2"></i>
+                    Sobre o Grupo
+                </h2>
+                
+                <!-- Description -->
+                <div class="description-content mb-4">
+                    {{ grupo.descricao|linebreaks }}
+                </div>
+                
+                <!-- Contact Information -->
+                <div class="contact-info">
+                    <h4 class="h5 mb-3">
+                        <i class="bi bi-person-badge text-primary me-2"></i>
+                        Informações de Contato
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Representante:</strong><br>
+                            <span class="text-muted">{{ grupo.representante }}</span>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>Contato:</strong><br>
+                            <span class="text-muted">{{ grupo.contato }}</span>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3 me-1"></i>
+                                Inscrito em {{ grupo.data_inscricao|date:"d/m/Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <aside class="col-lg-4">
+            <!-- Voting Section -->
+            <div class="vote-section {% if user_voted %}voted-section{% endif %}">
+                {% if user_voted %}
+                <h3 class="h4 mb-3 text-success">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Já Votou!
+                </h3>
+                <p class="text-muted mb-3">
+                    Você já votou na categoria {{ grupo.get_categoria_display }}.
+                </p>
+                <div class="d-grid">
+                    <a href="{% url 'votacao:resultados' %}" class="btn btn-outline-success btn-lg">
+                        <i class="bi bi-bar-chart me-2"></i>
+                        Ver Resultados
+                    </a>
+                </div>
+                {% else %}
+                <h3 class="h4 mb-3">
+                    <i class="bi bi-hand-thumbs-up text-primary me-2"></i>
+                    Vote neste Grupo!
+                </h3>
+                <p class="text-muted mb-3">
+                    Gostou do {{ grupo.nome_grupo }}? Vote e ajude-os a ganhar!
+                </p>
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Voto custa 10 MZN via M-Pesa
+                    </small>
+                </div>
+                <div class="d-grid">
+                    <a href="{% url 'votacao:votar' %}?grupo={{ grupo.id }}" 
+                       class="vote-button pulse">
+                        <i class="bi bi-heart-fill"></i>
+                        Votar por 10 MZN
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Group Statistics -->
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-graph-up text-primary me-2"></i>
+                        Estatísticas
+                    </h5>
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ grupo.total_votos|default:0 }}</span>
+                                <span class="stat-label">Total de Votos</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ grupos_relacionados|length|add:1 }}</span>
+                                <span class="stat-label">Grupos na Categoria</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card border-0 bg-light mt-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <i class="bi bi-lightning-charge text-warning me-2"></i>
+                        Ações Rápidas
+                    </h5>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'votacao:votar' %}" class="btn btn-primary">
+                            <i class="bi bi-hand-thumbs-up me-2"></i>
+                            Ver Todos os Grupos
+                        </a>
+                        <a href="{% url 'noticias:lista' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-newspaper me-2"></i>
+                            Notícias do Carnaval
+                        </a>
+                        <a href="{% url 'votacao:resultados' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-bar-chart me-2"></i>
+                            Ver Resultados
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+    
+    <!-- Related Groups -->
+    {% if grupos_relacionados %}
+    <section class="mt-5">
+        <h3 class="mb-4">
+            <i class="bi bi-people text-primary me-2"></i>
+            Outros Grupos da Categoria {{ grupo.get_categoria_display }}
+        </h3>
+        
+        <div class="row">
+            {% for grupo_rel in grupos_relacionados %}
+            <div class="col-md-6 col-lg-3 mb-4">
+                <div class="card related-group-card h-100">
+                    {% if grupo_rel.foto %}
+                    <img src="{{ grupo_rel.foto.url }}" 
+                         alt="{{ grupo_rel.nome_grupo }}" 
+                         class="related-group-img"
+                         loading="lazy">
+                    {% else %}
+                    <div class="related-group-img bg-gradient d-flex align-items-center justify-content-center">
+                        {% if grupo_rel.categoria == 'escola_samba' %}
+                            <i class="bi bi-star text-white" style="font-size: 3rem;"></i>
+                        {% else %}
+                            <i class="bi bi-people text-white" style="font-size: 3rem;"></i>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">
+                            <a href="{% url 'grupos:detalhe' grupo_rel.id %}" 
+                               class="text-decoration-none text-dark stretched-link">
+                                {{ grupo_rel.nome_grupo }}
+                            </a>
+                        </h5>
+                        <p class="card-text text-muted flex-grow-1">
+                            {{ grupo_rel.descricao|truncatewords:15 }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-heart me-1"></i>
+                                {{ grupo_rel.total_votos|default:0 }} votos
+                            </small>
+                            <span class="badge categoria-{{ grupo_rel.categoria }}">
+                                {{ grupo_rel.get_categoria_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Smooth scrolling for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+
+// Add to favorites functionality (localStorage)
+function toggleFavorite(grupoId, grupoNome) {
+    let favorites = JSON.parse(localStorage.getItem('favoriteGroups') || '[]');
+    const index = favorites.findIndex(fav => fav.id === grupoId);
+    
+    if (index > -1) {
+        favorites.splice(index, 1);
+        showToast(`${grupoNome} removido dos favoritos`, 'info');
+    } else {
+        favorites.push({id: grupoId, nome: grupoNome});
+        showToast(`${grupoNome} adicionado aos favoritos`, 'success');
+    }
+    
+    localStorage.setItem('favoriteGroups', JSON.stringify(favorites));
+    updateFavoriteButton(grupoId);
+}
+
+function updateFavoriteButton(grupoId) {
+    const favorites = JSON.parse(localStorage.getItem('favoriteGroups') || '[]');
+    const isFavorite = favorites.some(fav => fav.id === grupoId);
+    const btn = document.getElementById('favorite-btn');
+    
+    if (btn) {
+        if (isFavorite) {
+            btn.innerHTML = '<i class="bi bi-heart-fill me-2"></i>Remover dos Favoritos';
+            btn.classList.remove('btn-outline-danger');
+            btn.classList.add('btn-danger');
+        } else {
+            btn.innerHTML = '<i class="bi bi-heart me-2"></i>Adicionar aos Favoritos';
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-outline-danger');
+        }
+    }
+}
+
+// Toast notification
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        <i class="bi bi-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+}
+
+// Share functionality
+function shareGroup(grupoNome, grupoId) {
+    if (navigator.share) {
+        navigator.share({
+            title: grupoNome,
+            text: `Confira o grupo ${grupoNome} no Carnaval da Beira!`,
+            url: window.location.href
+        });
+    } else {
+        // Fallback - copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            showToast('Link copiado para a área de transferência!', 'success');
+        });
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Update favorite button state if it exists
+    const grupoId = {{ grupo.id }};
+    updateFavoriteButton(grupoId);
+    
+    // Add click handlers for vote buttons
+    const voteButtons = document.querySelectorAll('.vote-button');
+    voteButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            // Analytics or tracking can be added here
+            console.log('Vote button clicked for group:', grupoId);
+        });
+    });
+});
+</script>
+{% endblock %}
