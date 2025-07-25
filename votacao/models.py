@@ -17,9 +17,9 @@ class Voto(models.Model):
         verbose_name="Grupo",
         related_name="votos"
     )
-    categoria = models.CharField(
-        max_length=20,
-        choices=Grupo.CATEGORIA_CHOICES,
+    categoria = models.ForeignKey(
+        'grupos.Categoria',
+        on_delete=models.CASCADE,
         verbose_name="Categoria"
     )
     device_id = models.CharField(
@@ -60,9 +60,9 @@ class Voto(models.Model):
 
 class ResultadoVotacao(models.Model):
     """Model to store voting results summary"""
-    categoria = models.CharField(
-        max_length=20,
-        choices=Grupo.CATEGORIA_CHOICES,
+    categoria = models.ForeignKey(
+        'grupos.Categoria',
+        on_delete=models.CASCADE,
         unique=True,
         verbose_name="Categoria"
     )

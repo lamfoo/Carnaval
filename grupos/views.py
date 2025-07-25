@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Count, Q
 from django.core.paginator import Paginator
-from .models import Grupo
+from .models import Grupo, Categoria
 
 
 def lista_grupos(request):
@@ -50,7 +50,7 @@ def lista_grupos(request):
         'total_grupos': total_grupos,
         'grupos_escola_samba': grupos_escola_samba,
         'grupos_bloco_rua': grupos_bloco_rua,
-        'categorias': Grupo.CATEGORIA_CHOICES,
+        'categorias': Categoria.objects.filter(ativa=True).order_by('ordem'),
     }
     
     return render(request, 'grupos/lista.html', context)

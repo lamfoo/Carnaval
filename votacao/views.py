@@ -252,24 +252,26 @@ def votar(request):
     
     # Get categories and check voting status
     categorias_info = []
-    for categoria_code, categoria_name in Grupo.CATEGORIA_CHOICES:
+    from grupos.models import Categoria
+    for categoria in Categoria.objects.filter(ativa=True).order_by('ordem'):
         # Check if user already voted in this category
         ja_votou = Voto.objects.filter(
             device_id=device_id,
-            categoria=categoria_code
+            categoria=categoria
         ).exists()
         
         # Get groups for this category
         grupos = Grupo.objects.filter(
-            categoria=categoria_code,
+            categoria=categoria,
             ativo=True
         ).annotate(
             total_votos=Count('votos')
         ).order_by('nome_grupo')
         
         categorias_info.append({
-            'codigo': categoria_code,
-            'nome': categoria_name,
+            'codigo': categoria.codigo,
+            'nome': categoria.nome,
+            'categoria_obj': categoria,
             'grupos': grupos,
             'ja_votou': ja_votou,
             'total_grupos': grupos.count(),
@@ -378,10 +380,10 @@ def resultados(request):
     # Get results by category
     resultados_por_categoria = {}
     
-    for categoria_code, categoria_name in Grupo.CATEGORIA_CHOICES:
+    for categoria in Categoria.objects.filter(ativa=True).order_by('ordem'):
         # Get groups with vote counts
         grupos_com_votos = Grupo.objects.filter(
-            categoria=categoria_code,
+            categoria=categoria,
             ativo=True
         ).annotate(
             total_votos=Count('votos')
@@ -401,8 +403,9 @@ def resultados(request):
         total_grupos = grupos_com_votos.count()
         media_votos = (total_votos_categoria / total_grupos) if total_grupos > 0 else 0
         
-        resultados_por_categoria[categoria_code] = {
-            'nome': categoria_name,
+        resultados_por_categoria[categoria.codigo] = {
+            'nome': categoria.nome,
+            'categoria_obj': categoria,
             'grupos': grupos_com_votos,
             'total_votos': total_votos_categoria,
             'total_grupos': total_grupos,
@@ -434,9 +437,9 @@ def resultados_json(request):
     
     resultados = {}
     
-    for categoria_code, categoria_name in Grupo.CATEGORIA_CHOICES:
+    for categoria in Categoria.objects.filter(ativa=True).order_by('ordem'):
         grupos_com_votos = Grupo.objects.filter(
-            categoria=categoria_code,
+            categoria=categoria,
             ativo=True
         ).annotate(
             total_votos=Count('votos')
@@ -444,8 +447,8 @@ def resultados_json(request):
         
         total_votos_categoria = sum(grupo.total_votos for grupo in grupos_com_votos)
         
-        resultados[categoria_code] = {
-            'nome': categoria_name,
+        resultados[categoria.codigo] = {
+            'nome': categoria.nome,
             'total_votos': total_votos_categoria,
             'grupos': [
                 {
@@ -470,13 +473,13 @@ def verificar_voto(request):
     device_id = get_or_create_device_id(request)
     
     votos_existentes = {}
-    for categoria_code, categoria_name in Grupo.CATEGORIA_CHOICES:
+    for categoria in Categoria.objects.filter(ativa=True).order_by('ordem'):
         voto = Voto.objects.filter(
             device_id=device_id,
-            categoria=categoria_code
+            categoria=categoria
         ).first()
         
-        votos_existentes[categoria_code] = {
+        votos_existentes[categoria.codigo] = {
             'votou': bool(voto),
             'grupo': voto.grupo.nome_grupo if voto else None,
             'timestamp': voto.timestamp.isoformat() if voto else None
