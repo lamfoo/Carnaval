@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.db.models import Count, Q
 from django.db import transaction, IntegrityError
 from django_ratelimit.decorators import ratelimit
-from grupos.models import Grupo
+from grupos.models import Grupo, Categoria
 from .models import Voto, ResultadoVotacao, VotingSession, generate_device_id
 import hashlib
 import json
@@ -252,7 +252,6 @@ def votar(request):
     
     # Get categories and check voting status
     categorias_info = []
-    from grupos.models import Categoria
     for categoria in Categoria.objects.filter(ativa=True).order_by('ordem'):
         # Check if user already voted in this category
         ja_votou = Voto.objects.filter(
