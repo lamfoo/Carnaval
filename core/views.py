@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.db.models import Count
-from grupos.models import Grupo
+from grupos.models import Grupo, Categoria
 from noticias.models import Noticia
 from votacao.models import Voto, ResultadoVotacao
 
@@ -10,8 +10,24 @@ def home(request):
     
     # Get statistics
     total_grupos = Grupo.objects.filter(ativo=True).count()
-    grupos_escola_samba = Grupo.objects.filter(ativo=True, categoria='escola_samba').count()
-    grupos_bloco_rua = Grupo.objects.filter(ativo=True, categoria='bloco_rua').count()
+    
+    # Get categories and their group counts
+    categorias_stats = []
+    for categoria in Categoria.objects.filter(ativa=True).order_by('ordem'):
+        count = Grupo.objects.filter(ativo=True, categoria=categoria).count()
+        categorias_stats.append({
+            'categoria': categoria,
+            'count': count
+        })
+    
+    # For backward compatibility with templates
+    grupos_escola_samba = 0
+    grupos_bloco_rua = 0
+    for stat in categorias_stats:
+        if stat['categoria'].codigo == 'escola_samba':
+            grupos_escola_samba = stat['count']
+        elif stat['categoria'].codigo == 'bloco_rua':
+            grupos_bloco_rua = stat['count']
     
     # Get recent news
     noticias_destaque = Noticia.objects.filter(
@@ -40,6 +56,7 @@ def home(request):
         'total_grupos': total_grupos,
         'grupos_escola_samba': grupos_escola_samba,
         'grupos_bloco_rua': grupos_bloco_rua,
+        'categorias_stats': categorias_stats,
         'total_votos': total_votos,
         'noticias_destaque': noticias_destaque,
         'noticias_recentes': noticias_recentes,

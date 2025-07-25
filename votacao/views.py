@@ -175,7 +175,7 @@ def verificar_pagamento(request):
                 result.update({
                     'vote_processed': True,
                     'grupo_nome': payment.grupo.nome_grupo,
-                    'categoria': payment.get_categoria_display(),
+                    'categoria': payment.categoria.nome if payment.categoria else 'Sem categoria',
                     'redirect_url': reverse('votacao:resultados')
                 })
         
@@ -225,7 +225,7 @@ def _processar_voto_apos_pagamento(payment, request):
         return {
             'vote_processed': True,
             'grupo_nome': payment.grupo.nome_grupo,
-            'categoria': payment.get_categoria_display(),
+            'categoria': payment.categoria.nome if payment.categoria else 'Sem categoria',
             'redirect_url': reverse('votacao:resultados')
         }
         
@@ -328,7 +328,7 @@ def processar_voto(request):
         ).exists()
         
         if existing_vote:
-            messages.warning(request, f'Você já votou na categoria {grupo.get_categoria_display()}.')
+            messages.warning(request, f'Você já votou na categoria {grupo.categoria.nome}.')
             return redirect('votacao:votar')
         
         # Create the vote
@@ -362,7 +362,7 @@ def processar_voto(request):
         
         messages.success(
             request, 
-            f'Seu voto para "{grupo.nome_grupo}" na categoria {grupo.get_categoria_display()} foi registrado com sucesso!'
+            f'Seu voto para "{grupo.nome_grupo}" na categoria {grupo.categoria.nome} foi registrado com sucesso!'
         )
         
     except IntegrityError:

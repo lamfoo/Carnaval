@@ -46,13 +46,14 @@ class VotoAdmin(admin.ModelAdmin):
     
     def categoria_display(self, obj):
         """Display category with colored badge"""
-        color = '#28a745' if obj.categoria == 'escola_samba' else '#007bff'
-        return format_html(
-            '<span style="background-color: {}; color: white; padding: 2px 6px; '
-            'border-radius: 3px; font-size: 10px;">{}</span>',
-            color,
-            obj.get_categoria_display()
-        )
+        if obj.categoria:
+            return format_html(
+                '<span style="background: {}; color: white; padding: 2px 6px; '
+                'border-radius: 3px; font-size: 10px;">{}</span>',
+                obj.categoria.cor_primaria,
+                obj.categoria.nome
+            )
+        return "Sem categoria"
     categoria_display.short_description = 'Categoria'
     
     def device_id_short(self, obj):
@@ -89,13 +90,14 @@ class ResultadoVotacaoAdmin(admin.ModelAdmin):
     
     def categoria_display(self, obj):
         """Display category with colored badge"""
-        color = '#28a745' if obj.categoria == 'escola_samba' else '#007bff'
-        return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; '
-            'border-radius: 3px; font-size: 11px;">{}</span>',
-            color,
-            obj.get_categoria_display()
-        )
+        if obj.categoria:
+            return format_html(
+                '<span style="background: {}; color: white; padding: 3px 8px; '
+                'border-radius: 3px; font-size: 11px;">{}</span>',
+                obj.categoria.cor_primaria,
+                obj.categoria.nome
+            )
+        return "Sem categoria"
     categoria_display.short_description = 'Categoria'
     
     def porcentagem_display(self, obj):

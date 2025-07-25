@@ -16,7 +16,12 @@ def lista_grupos(request):
     
     # Apply category filter
     if categoria and categoria != 'all':
-        grupos = grupos.filter(categoria=categoria)
+        try:
+            categoria_obj = Categoria.objects.get(codigo=categoria)
+            grupos = grupos.filter(categoria=categoria_obj)
+        except Categoria.DoesNotExist:
+            # If category doesn't exist, show all groups
+            pass
     
     # Apply search filter
     if search:
@@ -39,8 +44,19 @@ def lista_grupos(request):
     
     # Statistics for the page
     total_grupos = grupos.count()
-    grupos_escola_samba = grupos.filter(categoria='escola_samba').count()
-    grupos_bloco_rua = grupos.filter(categoria='bloco_rua').count()
+    
+    # Get category-specific counts using objects
+    try:
+        escola_samba_cat = Categoria.objects.get(codigo='escola_samba')
+        grupos_escola_samba = grupos.filter(categoria=escola_samba_cat).count()
+    except Categoria.DoesNotExist:
+        grupos_escola_samba = 0
+    
+    try:
+        bloco_rua_cat = Categoria.objects.get(codigo='bloco_rua')
+        grupos_bloco_rua = grupos.filter(categoria=bloco_rua_cat).count()
+    except Categoria.DoesNotExist:
+        grupos_bloco_rua = 0
     
     context = {
         'page_obj': page_obj,
