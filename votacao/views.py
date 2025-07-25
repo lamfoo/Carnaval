@@ -68,14 +68,16 @@ def iniciar_pagamento(request):
             })
         
         # Verifica se categoria é válida
-        if categoria not in ['escola_samba', 'bloco_rua']:
+        try:
+            categoria_obj = Categoria.objects.get(codigo=categoria, ativa=True)
+        except Categoria.DoesNotExist:
             return JsonResponse({
                 'success': False, 
                 'error': 'Categoria inválida'
             })
         
         # Verifica se o grupo está na categoria correta
-        if grupo.categoria != categoria:
+        if grupo.categoria != categoria_obj:
             return JsonResponse({
                 'success': False, 
                 'error': 'Grupo não pertence à categoria selecionada'
@@ -86,7 +88,7 @@ def iniciar_pagamento(request):
         ip_address = get_client_ip(request)
         
         # Verifica se já votou nesta categoria
-        if Voto.objects.filter(device_id=device_id, categoria=categoria).exists():
+        if Voto.objects.filter(device_id=device_id, categoria=categoria_obj).exists():
             return JsonResponse({
                 'success': False, 
                 'error': 'Você já votou nesta categoria'
@@ -96,7 +98,7 @@ def iniciar_pagamento(request):
         from .models import Payment
         existing_payment = Payment.objects.filter(
             device_id=device_id,
-            categoria=categoria,
+            categoria=categoria_obj,
             status__in=['pending', 'processing']
         ).first()
         
@@ -114,7 +116,7 @@ def iniciar_pagamento(request):
             phone_number=phone_number,
             amount=settings.VOTE_PRICE,
             grupo_id=grupo_id,
-            categoria=categoria,
+            categoria=categoria_obj,
             device_id=device_id,
             ip_address=ip_address
         )
