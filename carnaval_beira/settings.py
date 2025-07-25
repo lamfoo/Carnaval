@@ -186,7 +186,7 @@ MPESA_ORIGIN = 'developer.mpesa.vm.co.mz'
 
 # Voting payment settings
 VOTE_PRICE = '10'  # Price in MZN for each vote
-PAYMENT_TIMEOUT = 300  # 5 minutes timeout for payment processing
+PAYMENT_TIMEOUT = 120  # 2 minutes timeout for payment processing
 
 # Silenced system checks
 SILENCED_SYSTEM_CHECKS = [

@@ -580,15 +580,15 @@ function initiatePayment(phoneNumber, grupoId, categoria) {
             console.log('⏰ Starting payment status checks every 3 seconds...');
             window.paymentCheckInterval = setInterval(checkPaymentStatus, 3000);
             
-            // Auto-timeout after 3 minutes (tempo real do M-Pesa)
+            // Auto-timeout after 2 minutes (tempo real do M-Pesa)
             setTimeout(function() {
                 if (window.paymentCheckInterval) {
-                    console.log('⏰ 3-minute timeout reached, stopping checks');
+                    console.log('⏰ 2-minute timeout reached, stopping checks');
                     clearInterval(window.paymentCheckInterval);
                     window.paymentCheckInterval = null;
-                    showPaymentError('⏰ Tempo limite de 3 minutos esgotado. O sistema M-Pesa cancela automaticamente após este período. Tente novamente.');
+                    showPaymentError('⏰ Tempo limite de 2 minutos esgotado. O M-Pesa cancela automaticamente após este período. Tente novamente.');
                 }
-            }, 180000); // 3 minutes
+            }, 120000); // 2 minutes
         } else {
             // Verificar se é erro de timeout específico
             if (data.timeout) {
@@ -666,7 +666,7 @@ function checkPaymentStatus() {
             console.log('❌ Payment timeout detected');
             clearInterval(window.paymentCheckInterval);
             window.paymentCheckInterval = null;
-            showPaymentError('⏰ Timeout: O PIN M-Pesa não foi inserido a tempo. O usuário tem 2 minutos para confirmar. Tente novamente.');
+            showPaymentError('⏰ Tempo Esgotado: O PIN M-Pesa deve ser inserido em até 90 segundos após receber a notificação USSD. Tente novamente e insira o PIN mais rapidamente.');
         } else if (data.status === 'processing') {
             console.log('🔄 Payment still processing, will check again in 3 seconds...');
             // Continue checking for processing payments
@@ -710,6 +710,16 @@ function showPaymentError(message) {
                         </div>
                         <h4>Confirme seu voto</h4>
                         <p class="text-muted">Para votar no grupo <strong id="selected-group-name"></strong>, é necessário pagar <strong>{{ settings.VOTE_PRICE }} MZN</strong> via M-Pesa</p>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle me-1"></i> Instruções M-Pesa:</h6>
+                            <ol class="mb-0">
+                                <li>Digite seu número M-Pesa abaixo</li>
+                                <li>Receberá notificação USSD no telefone</li>
+                                <li><strong>Insira o PIN em até 90 segundos</strong></li>
+                                <li>Confirme o pagamento de {{ settings.VOTE_PRICE }} MZN</li>
+                            </ol>
+                        </div>
                     </div>
                     
                     <form id="payment-form">

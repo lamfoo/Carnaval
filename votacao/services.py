@@ -145,7 +145,9 @@ class MPesaService:
                 payment.response_code = response_body.get('output_ResponseCode', '')
                 payment.response_desc = response_body.get('output_ResponseDesc', '')
                 
-                if response_body.get('output_ResponseCode') == 'INS-0':
+                response_code = response_body.get('output_ResponseCode', '')
+                
+                if response_code == 'INS-0':
                     payment.status = 'completed'
                     payment.save()
                     
@@ -156,14 +158,26 @@ class MPesaService:
                         'payment_id': payment.id,
                         'transaction_reference': transaction_ref,
                         'conversation_id': payment.conversation_id,
-                        'message': 'Pagamento processado com sucesso! Verifique seu telefone para confirmar.'
+                        'message': 'Pagamento processado com sucesso!'
+                    }
+                elif response_code == 'INS-9':
+                    # Timeout específico do M-Pesa
+                    payment.status = 'timeout'
+                    payment.save()
+                    
+                    logger.warning(f"Timeout M-Pesa (INS-9): {transaction_ref}")
+                    
+                    return {
+                        'success': False,
+                        'error': 'Tempo limite esgotado. Por favor, insira o PIN M-Pesa mais rapidamente na próxima tentativa.',
+                        'timeout': True
                     }
                 else:
                     payment.status = 'failed'
                     payment.save()
                     
                     error_msg = response_body.get('output_ResponseDesc', 'Erro desconhecido')
-                    logger.error(f"Pagamento falhou: {error_msg}")
+                    logger.error(f"Pagamento falhou ({response_code}): {error_msg}")
                     
                     return {
                         'success': False,

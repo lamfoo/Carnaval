@@ -55,7 +55,7 @@ class APIRequest:
                 self.context.get_url(), 
                 headers=self.context.get_headers(), 
                 json=self.context.get_parameters(),
-                timeout=120
+                timeout=90
             )
             print(f"M-Pesa Response: {r.status_code} - {r.text}")
             return APIResponse(r.status_code, json.loads(r.headers.__str__().replace("'", '"')), json.loads(r.text))
