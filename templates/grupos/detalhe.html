@@ -3,7 +3,7 @@
 
 {% block title %}{{ grupo.nome_grupo }} - Carnaval da Beira{% endblock %}
 
-{% block meta_description %}{{ grupo.descricao|truncatewords:25 }} - Grupo {{ grupo.get_categoria_display }} no Carnaval da Beira{% endblock %}
+{% block meta_description %}{{ grupo.descricao|truncatewords:25 }} - Grupo {{ grupo.categoria.nome }} no Carnaval da Beira{% endblock %}
 
 {% block extra_css %}
 <style>

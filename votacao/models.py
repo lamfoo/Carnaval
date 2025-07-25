@@ -49,7 +49,7 @@ class Voto(models.Model):
         ]
         
     def __str__(self):
-        return f"Voto para {self.grupo.nome_grupo} - {self.get_categoria_display()}"
+        return f"Voto para {self.grupo.nome_grupo} - {self.categoria.nome}"
         
     def save(self, *args, **kwargs):
         # Ensure categoria matches grupo's categoria
@@ -80,7 +80,7 @@ class ResultadoVotacao(models.Model):
         verbose_name_plural = "Resultados da Votação"
         
     def __str__(self):
-        return f"Resultado - {self.get_categoria_display()}"
+        return f"Resultado - {self.categoria.nome}"
         
     @classmethod
     def update_results(cls, categoria):
@@ -151,10 +151,11 @@ class Payment(models.Model):
     
     # Dados do voto associado
     grupo = models.ForeignKey('grupos.Grupo', on_delete=models.CASCADE)
-    categoria = models.CharField(max_length=20, choices=[
-        ('escola_samba', 'Escola de Samba'),
-        ('bloco_rua', 'Bloco de Rua'),
-    ])
+    categoria = models.ForeignKey(
+        'grupos.Categoria',
+        on_delete=models.CASCADE,
+        verbose_name="Categoria"
+    )
     device_id = models.CharField(max_length=64)
     ip_address = models.GenericIPAddressField()
     

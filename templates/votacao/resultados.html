@@ -76,7 +76,7 @@ Confira os resultados da votação popular do Carnaval da Beira!
                     </div>
                     <div class="card-body">
                         <h6 class="card-title">{{ grupo.nome_grupo }}</h6>
-                        <p class="text-muted">{{ grupo.get_categoria_display }}</p>
+                        <p class="text-muted">{{ grupo.categoria.nome }}</p>
                         <div class="display-6 text-carnival-primary">{{ grupo.total_votos }}</div>
                         <small class="text-muted">voto{{ grupo.total_votos|pluralize }}</small>
                     </div>
